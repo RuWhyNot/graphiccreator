@@ -1,35 +1,26 @@
 //---------------------------------------------------------------------------
 
-#ifndef Unit1H
-#define Unit1H
+#ifndef Unit2H
+#define Unit2H
 //---------------------------------------------------------------------------
 #include <Classes.hpp>
 #include <Controls.hpp>
 #include <StdCtrls.hpp>
 #include <Forms.hpp>
-#include <ComCtrls.hpp>
+#include <Menus.hpp>
 //---------------------------------------------------------------------------
-class TForm1 : public TForm
+class TDM : public TDataModule
 {
 __published:	// IDE-managed Components
-  TPageControl *PageControl1;
-  TTabSheet *TabSheet1;
-  TComboBox *CB_Figures;
-  TLabel *Label1;
-  TEdit *Ed_VertCount;
-  TLabel *Label2;
-  TCheckBox *ChB_Valid;
-  TLabel *Label3;
-  TComboBox *CB_Size;
-  void __fastcall FormCreate(TObject *Sender);
-  void __fastcall FormActivate(TObject *Sender);
-  void __fastcall CB_FiguresChange(TObject *Sender);
+  TMainMenu *MainMenu1;
+  TMenuItem *N1;
+  TMenuItem *N2;
+  void __fastcall N2Click(TObject *Sender);
 private:	// User declarations
 public:		// User declarations
-  __fastcall TForm1(TComponent* Owner);
+  __fastcall TDM(TComponent* Owner);
 };
 //---------------------------------------------------------------------------
-extern PACKAGE TForm1 *Form1;
+extern PACKAGE TDM *DM;
 //---------------------------------------------------------------------------
 #endif
- 
