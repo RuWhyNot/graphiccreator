@@ -1,0 +1,2 @@
+06.05.2013 22:30:02,85 Launching TextToGraphic.class 
+22:30:07,500 Log: Закрытие приложения

@@ -19,8 +19,8 @@ object Form1: TForm1
   object PageControl1: TPageControl
     Left = 0
     Top = 0
-    Width = 817
-    Height = 490
+    Width = 809
+    Height = 478
     ActivePage = TabSheet1
     Align = alClient
     TabIndex = 0
@@ -79,6 +79,22 @@ object Form1: TForm1
         Height = 21
         ItemHeight = 13
         TabOrder = 3
+      end
+      object Memo1: TMemo
+        Left = 112
+        Top = 248
+        Width = 185
+        Height = 89
+        TabOrder = 4
+      end
+      object Button1: TButton
+        Left = 160
+        Top = 344
+        Width = 81
+        Height = 25
+        Caption = #1056#1072#1089#1087#1086#1079#1085#1072#1090#1100
+        TabOrder = 5
+        OnClick = Button1Click
       end
     end
   end

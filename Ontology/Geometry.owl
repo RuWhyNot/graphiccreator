@@ -1,0 +1,459 @@
+<?xml version="1.0"?>
+
+
+<!DOCTYPE Ontology [
+    <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#" >
+    <!ENTITY xml "http://www.w3.org/XML/1998/namespace" >
+    <!ENTITY rdfs "http://www.w3.org/2000/01/rdf-schema#" >
+    <!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#" >
+]>
+
+
+<Ontology xmlns="http://www.w3.org/2002/07/owl#"
+     xml:base="http://www.semanticweb.org/whynot/ontologies/2013/3/untitled-ontology-3"
+     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+     xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
+     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+     xmlns:xml="http://www.w3.org/XML/1998/namespace"
+     ontologyIRI="http://www.semanticweb.org/whynot/ontologies/2013/3/untitled-ontology-3">
+    <Prefix name="" IRI="http://www.w3.org/2002/07/owl#"/>
+    <Prefix name="owl" IRI="http://www.w3.org/2002/07/owl#"/>
+    <Prefix name="rdf" IRI="http://www.w3.org/1999/02/22-rdf-syntax-ns#"/>
+    <Prefix name="xsd" IRI="http://www.w3.org/2001/XMLSchema#"/>
+    <Prefix name="rdfs" IRI="http://www.w3.org/2000/01/rdf-schema#"/>
+    <Annotation>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <Literal datatypeIRI="&rdf;PlainLiteral">Онтология геометрических фигур</Literal>
+    </Annotation>
+    <Declaration>
+        <Class IRI="#CenterSymmetric"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#Circle"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#Closed"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#ClosedType"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#Curve"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#Dot"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#Ellipse"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#Figure"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#Line"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#LineSymmetric"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#Opened"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#Polygon"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#Polyline"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#Primitive"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#Rect"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#Square"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#SymmetryType"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#Triangle"/>
+    </Declaration>
+    <Declaration>
+        <ObjectProperty IRI="#hasClosedType"/>
+    </Declaration>
+    <Declaration>
+        <ObjectProperty IRI="#hasPart"/>
+    </Declaration>
+    <Declaration>
+        <ObjectProperty IRI="#hasSymmetryType"/>
+    </Declaration>
+    <Declaration>
+        <ObjectProperty IRI="#isSymmetryTypeOf"/>
+    </Declaration>
+    <Declaration>
+        <DataProperty IRI="#AngleCount"/>
+    </Declaration>
+    <Declaration>
+        <DataProperty IRI="#Size"/>
+    </Declaration>
+    <SubClassOf>
+        <Class IRI="#CenterSymmetric"/>
+        <Class IRI="#LineSymmetric"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#Circle"/>
+        <Class IRI="#Ellipse"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#Circle"/>
+        <ObjectSomeValuesFrom>
+            <ObjectProperty IRI="#hasSymmetryType"/>
+            <Class IRI="#CenterSymmetric"/>
+        </ObjectSomeValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#Closed"/>
+        <Class IRI="#ClosedType"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#Curve"/>
+        <Class IRI="#Primitive"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#Dot"/>
+        <Class IRI="#Primitive"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#Ellipse"/>
+        <Class IRI="#Figure"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#Ellipse"/>
+        <ObjectSomeValuesFrom>
+            <ObjectProperty IRI="#hasClosedType"/>
+            <Class IRI="#Closed"/>
+        </ObjectSomeValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#Ellipse"/>
+        <ObjectSomeValuesFrom>
+            <ObjectProperty IRI="#hasPart"/>
+            <Class IRI="#Curve"/>
+        </ObjectSomeValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#Ellipse"/>
+        <ObjectSomeValuesFrom>
+            <ObjectProperty IRI="#hasSymmetryType"/>
+            <Class IRI="#LineSymmetric"/>
+        </ObjectSomeValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#Line"/>
+        <Class IRI="#Primitive"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#LineSymmetric"/>
+        <Class IRI="#SymmetryType"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#Opened"/>
+        <Class IRI="#ClosedType"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#Polygon"/>
+        <Class IRI="#Figure"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#Polygon"/>
+        <ObjectSomeValuesFrom>
+            <ObjectProperty IRI="#hasPart"/>
+            <Class IRI="#Dot"/>
+        </ObjectSomeValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#Polygon"/>
+        <ObjectSomeValuesFrom>
+            <ObjectProperty IRI="#hasPart"/>
+            <Class IRI="#Line"/>
+        </ObjectSomeValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#Polygon"/>
+        <ObjectAllValuesFrom>
+            <ObjectProperty IRI="#hasClosedType"/>
+            <Class IRI="#Closed"/>
+        </ObjectAllValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#Polygon"/>
+        <DataSomeValuesFrom>
+            <DataProperty IRI="#AngleCount"/>
+            <Datatype abbreviatedIRI="xsd:int"/>
+        </DataSomeValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#Polyline"/>
+        <Class IRI="#Figure"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#Polyline"/>
+        <ObjectSomeValuesFrom>
+            <ObjectProperty IRI="#hasPart"/>
+            <Class IRI="#Dot"/>
+        </ObjectSomeValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#Polyline"/>
+        <ObjectSomeValuesFrom>
+            <ObjectProperty IRI="#hasPart"/>
+            <Class IRI="#Line"/>
+        </ObjectSomeValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#Polyline"/>
+        <ObjectAllValuesFrom>
+            <ObjectProperty IRI="#hasClosedType"/>
+            <Class IRI="#Opened"/>
+        </ObjectAllValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#Polyline"/>
+        <DataSomeValuesFrom>
+            <DataProperty IRI="#AngleCount"/>
+            <Datatype abbreviatedIRI="xsd:int"/>
+        </DataSomeValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#Rect"/>
+        <Class IRI="#Polygon"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#Rect"/>
+        <ObjectIntersectionOf>
+            <Class IRI="#Polygon"/>
+            <DataAllValuesFrom>
+                <DataProperty IRI="#AngleCount"/>
+                <DataOneOf>
+                    <Literal datatypeIRI="&xsd;integer">4</Literal>
+                </DataOneOf>
+            </DataAllValuesFrom>
+        </ObjectIntersectionOf>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#Rect"/>
+        <ObjectSomeValuesFrom>
+            <ObjectProperty IRI="#hasSymmetryType"/>
+            <Class IRI="#LineSymmetric"/>
+        </ObjectSomeValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#Square"/>
+        <Class IRI="#Rect"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#Square"/>
+        <ObjectSomeValuesFrom>
+            <ObjectProperty IRI="#hasSymmetryType"/>
+            <Class IRI="#CenterSymmetric"/>
+        </ObjectSomeValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#Triangle"/>
+        <Class IRI="#Polygon"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#Triangle"/>
+        <ObjectIntersectionOf>
+            <Class IRI="#Polygon"/>
+            <DataAllValuesFrom>
+                <DataProperty IRI="#AngleCount"/>
+                <DataOneOf>
+                    <Literal datatypeIRI="&xsd;integer">3</Literal>
+                </DataOneOf>
+            </DataAllValuesFrom>
+        </ObjectIntersectionOf>
+    </SubClassOf>
+    <DisjointClasses>
+        <Class IRI="#Closed"/>
+        <Class IRI="#Opened"/>
+    </DisjointClasses>
+    <DisjointClasses>
+        <Class IRI="#ClosedType"/>
+        <Class IRI="#Ellipse"/>
+    </DisjointClasses>
+    <DisjointClasses>
+        <Class IRI="#ClosedType"/>
+        <Class IRI="#Figure"/>
+    </DisjointClasses>
+    <DisjointClasses>
+        <Class IRI="#ClosedType"/>
+        <Class IRI="#Primitive"/>
+    </DisjointClasses>
+    <DisjointClasses>
+        <Class IRI="#ClosedType"/>
+        <Class IRI="#SymmetryType"/>
+    </DisjointClasses>
+    <DisjointClasses>
+        <Class IRI="#Curve"/>
+        <Class IRI="#Dot"/>
+    </DisjointClasses>
+    <DisjointClasses>
+        <Class IRI="#Dot"/>
+        <Class IRI="#Line"/>
+    </DisjointClasses>
+    <DisjointClasses>
+        <Class IRI="#Figure"/>
+        <Class IRI="#Primitive"/>
+    </DisjointClasses>
+    <DisjointClasses>
+        <Class IRI="#Figure"/>
+        <Class IRI="#SymmetryType"/>
+    </DisjointClasses>
+    <DisjointClasses>
+        <Class IRI="#Primitive"/>
+        <Class IRI="#SymmetryType"/>
+    </DisjointClasses>
+    <InverseObjectProperties>
+        <ObjectProperty IRI="#isSymmetryTypeOf"/>
+        <ObjectProperty IRI="#hasSymmetryType"/>
+    </InverseObjectProperties>
+    <FunctionalObjectProperty>
+        <ObjectProperty IRI="#hasClosedType"/>
+    </FunctionalObjectProperty>
+    <FunctionalObjectProperty>
+        <ObjectProperty IRI="#hasSymmetryType"/>
+    </FunctionalObjectProperty>
+    <InverseFunctionalObjectProperty>
+        <ObjectProperty IRI="#isSymmetryTypeOf"/>
+    </InverseFunctionalObjectProperty>
+    <AsymmetricObjectProperty>
+        <ObjectProperty IRI="#hasSymmetryType"/>
+    </AsymmetricObjectProperty>
+    <AsymmetricObjectProperty>
+        <ObjectProperty IRI="#isSymmetryTypeOf"/>
+    </AsymmetricObjectProperty>
+    <IrreflexiveObjectProperty>
+        <ObjectProperty IRI="#hasSymmetryType"/>
+    </IrreflexiveObjectProperty>
+    <IrreflexiveObjectProperty>
+        <ObjectProperty IRI="#isSymmetryTypeOf"/>
+    </IrreflexiveObjectProperty>
+    <ObjectPropertyDomain>
+        <ObjectProperty IRI="#hasPart"/>
+        <Class IRI="#Figure"/>
+    </ObjectPropertyDomain>
+    <ObjectPropertyDomain>
+        <ObjectProperty IRI="#hasSymmetryType"/>
+        <Class IRI="#Figure"/>
+    </ObjectPropertyDomain>
+    <ObjectPropertyDomain>
+        <ObjectProperty IRI="#isSymmetryTypeOf"/>
+        <Class IRI="#SymmetryType"/>
+    </ObjectPropertyDomain>
+    <ObjectPropertyRange>
+        <ObjectProperty IRI="#hasClosedType"/>
+        <Class IRI="#ClosedType"/>
+    </ObjectPropertyRange>
+    <ObjectPropertyRange>
+        <ObjectProperty IRI="#hasPart"/>
+        <Class IRI="#Primitive"/>
+    </ObjectPropertyRange>
+    <ObjectPropertyRange>
+        <ObjectProperty IRI="#hasSymmetryType"/>
+        <Class IRI="#SymmetryType"/>
+    </ObjectPropertyRange>
+    <ObjectPropertyRange>
+        <ObjectProperty IRI="#isSymmetryTypeOf"/>
+        <Class IRI="#Figure"/>
+    </ObjectPropertyRange>
+    <FunctionalDataProperty>
+        <DataProperty IRI="#Size"/>
+    </FunctionalDataProperty>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#CenterSymmetric</IRI>
+        <Literal datatypeIRI="&rdf;PlainLiteral">Симметрия относительно точки</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#Circle</IRI>
+        <Literal datatypeIRI="&rdf;PlainLiteral">Круг</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#Curve</IRI>
+        <Literal datatypeIRI="&rdf;PlainLiteral">Кривая</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#Dot</IRI>
+        <Literal datatypeIRI="&rdf;PlainLiteral">Точка в двумерном пространстве</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#Ellipse</IRI>
+        <Literal datatypeIRI="&rdf;PlainLiteral">Эллипс</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#Figure</IRI>
+        <Literal datatypeIRI="&rdf;PlainLiteral">Абстрактный класс Фигура</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#Line</IRI>
+        <Literal datatypeIRI="&rdf;PlainLiteral">Отрезок</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#LineSymmetric</IRI>
+        <Literal datatypeIRI="&rdf;PlainLiteral">Симметрия относительно линии</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#Polygon</IRI>
+        <Literal datatypeIRI="&rdf;PlainLiteral">Полигон - замкнутая полилиния</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#Polyline</IRI>
+        <Literal datatypeIRI="&rdf;PlainLiteral">Полилиния</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#Primitive</IRI>
+        <Literal datatypeIRI="&rdf;PlainLiteral">Абстрактный класс Геометрический примитив</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#Rect</IRI>
+        <Literal datatypeIRI="&rdf;PlainLiteral">Прямоугольник</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#Size</IRI>
+        <Literal datatypeIRI="&rdf;PlainLiteral">Размер фигуры</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#Square</IRI>
+        <Literal datatypeIRI="&rdf;PlainLiteral">Квадрат</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#SymmetryType</IRI>
+        <Literal datatypeIRI="&rdf;PlainLiteral">Тип симметрии</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#Triangle</IRI>
+        <Literal datatypeIRI="&rdf;PlainLiteral">Треугольник</Literal>
+    </AnnotationAssertion>
+</Ontology>
+
+
+
+<!-- Generated by the OWL API (version 3.4.2) http://owlapi.sourceforge.net -->
+

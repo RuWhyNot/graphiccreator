@@ -5,6 +5,7 @@
 *.res
 *.tds
 *.obj
+*.class
 
 # Compiled Dynamic libraries
 *.so
@@ -17,3 +18,8 @@
 
 # Autosave files
 *.~*
+
+# Other
+*.bat
+*.lnk
+*Thumbs.db

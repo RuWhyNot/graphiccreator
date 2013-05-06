@@ -21,9 +21,12 @@ __published:	// IDE-managed Components
   TCheckBox *ChB_Valid;
   TLabel *Label3;
   TComboBox *CB_Size;
+  TMemo *Memo1;
+  TButton *Button1;
   void __fastcall FormCreate(TObject *Sender);
   void __fastcall FormActivate(TObject *Sender);
   void __fastcall CB_FiguresChange(TObject *Sender);
+  void __fastcall Button1Click(TObject *Sender);
 private:	// User declarations
 public:		// User declarations
   __fastcall TForm1(TComponent* Owner);

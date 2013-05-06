@@ -132,3 +132,9 @@ void __fastcall TForm1::CB_FiguresChange(TObject *Sender)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TForm1::Button1Click(TObject *Sender)
+{
+  std::getline(fs,str,',');  
+}
+//---------------------------------------------------------------------------
+
