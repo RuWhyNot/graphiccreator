@@ -34,7 +34,7 @@ class Window1 extends Frame
 
 		// создаём лейбл
 		Label Label1 = new Label();
-		Label1.setBounds(30, 330, 300, 30);
+		Label1.setBounds(30, 330, 400, 30);
 		add(Label1);
 
 		// создание поля ввода
@@ -72,6 +72,7 @@ class Window1 extends Frame
 
 	public void drawGraph(Graphics g, int xDr, int yDr)
 	{
+		/*
 		// оси координат
 		g.drawLine(xDr, yDr, xDr + 400, yDr);
 		g.drawLine(xDr, yDr - 150, xDr, yDr + 150);
@@ -80,7 +81,7 @@ class Window1 extends Frame
 		for (int i = 1; i < 400; i++)
 		{
 			g.drawLine(xDr + i - 1, yDr - Elements[i - 1], xDr + i, yDr - Elements[i]);
-		}
+		}*/
 	}
 }
 
@@ -105,17 +106,70 @@ class TextToGraphic
 
 	public static String VerifyText(String st)
 	{
-		String DRAW_NAMES = "рисовать|нарисовать|начертить|рисуем";
-		String FIGURE_NAME = "фигура|фигуру";
-		String regex = "[^.]*("+DRAW_NAMES+")[^.]+(квадрат)(\\.|$)";
-		Pattern p = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+		// комманды
+		final String DRAW_NAME = "рисовать|нарисовать|начертить|рисуем";
+
+		// отношения
+		final String IS_NAME = "является|являющийся|который является|-";
+
+		// свойства
+		final String CLOSED_NAME = "замкнутая|замкнута|замкнутой";
+		final String UNCLOSED_NAME = "разомкнута|не замкнутая|не замкнута|не замкнутой|замкнутый|замкнут|замкнутую";
+		final String HASPART_NAME = "состоит из|имеет в составе|содержит";
+		final String SYMMETRIC_NAME = "симметричная|симметрична|симметричный|симметричную";
+
+		// фигуры
+		final String FIGURE_NAME = "фигура|фигуру";
+		final String ELLIPSE_NAME = "эллипс";
+		final String POLYGON_NAME = "полигон|многоугольник";
+		final String POLYLINE_NAME = "полилиния|ломаная";
+		final String CIRCLE_NAME = "круг|окружность";
+		final String RECT_NAME = "прямоугольник";
+		final String SQUARE_NAME = "квадрат";
+		final String TRIANGLE_NAME = "треугольник";
+
+		// составные выражения
+		// какая-либо фигура 
+		final String SOME_FIGURE = FIGURE_NAME+"|"+ELLIPSE_NAME+"|"+POLYGON_NAME+"|"+POLYLINE_NAME+"|"+CIRCLE_NAME+"|"+RECT_NAME+"|"+SQUARE_NAME+"|"+TRIANGLE_NAME;
+		
+		// какое-либо пред-свойство (симметричный квадрат)
+		final String SOME_PREPROPERTY = CLOSED_NAME+"|"+UNCLOSED_NAME+"|"+SYMMETRIC_NAME;
+
+		// регулярные выражения
+		// есть ли в тексте любая команда
+		final String ANY_COMMAND = "[^.]*("+DRAW_NAME+")[^.]+("+SOME_FIGURE+")(\\.|$)";
+
+		// есть ли в тексте простая команда
+		final String SIMPLE_COMMAND = "[^.]*("+DRAW_NAME+")[\\s]+("+SOME_FIGURE+")(\\.|$)";
+
+		// рисовать+описание+название фигуры
+		final String ADV_COMMAND = "[^.]*("+DRAW_NAME+")+[\\s]+("+SOME_PREPROPERTY+")+[\\s]+("+SOME_FIGURE+")(\\.|$)";
+
+		// смотрим, есть ли команда
+		if (IsStringLikeThis(st, ANY_COMMAND))
+		{
+			// ищем простую комманду
+			if (IsStringLikeThis(st, SIMPLE_COMMAND))
+			{
+				return "Команда: "+st;
+			}
+			else if (IsStringLikeThis(st, ADV_COMMAND)) // если такой нет, ищем более сложную команду
+			{
+				return "Команда с условиями: "+st;
+			}
+		}
+		return "";
+	}
+	
+	public static boolean IsStringLikeThis(String st, String mask)
+	{
+		Pattern p = Pattern.compile(mask, Pattern.CASE_INSENSITIVE);
 		Matcher m = p.matcher(st);
 		while (m.find())
 		{
-			//System.out.println("Output: "+m.group());
-			return m.group();
+			return true;
 		}
-		return "";
+		return false;
 	}
 }
 
