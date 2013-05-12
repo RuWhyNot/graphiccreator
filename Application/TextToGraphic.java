@@ -7,6 +7,13 @@ import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/*
+ *	В коде использована прямая конкатенация строк, что является неоптимальным решением.
+ *	Если, в будущем, приложение планируется использовать для обработки большого количества
+ *	строк, то стоит использовать StringBuffer для сложения строк.
+ */
+
+
 // наше окно
 class Window1 extends Frame
 {
@@ -37,7 +44,7 @@ class Window1 extends Frame
 		Label1.setBounds(25, 330, 900, 30);
 		add(Label1);
 
-		TextArea Area = new TextArea("", 50, 50, TextArea.SCROLLBARS_HORIZONTAL_ONLY);
+		TextArea Area = new TextArea("", 50, 50, TextArea.SCROLLBARS_BOTH);
 		Area.setEditable(false);
 		Area.setBounds(25, 50, 450, 300);
 		add(Area);
@@ -57,7 +64,9 @@ class Window1 extends Frame
 		Memo.addActionListener(new ActLis(Memo, Label1, Area));
 
 		// создание обработчика нажатия кнопки
-		Btn1.addActionListener(new ActionListener()
+		Btn1.addActionListener(new ActLis(Memo, Label1, Area));
+		
+		/*Btn1.addActionListener(new ActionListener()
 		{
 			public void actionPerformed(ActionEvent ae)
 			{
@@ -65,34 +74,90 @@ class Window1 extends Frame
 
 				// перерисовать
 				paint(getGraphics());
+				
+				new ActLis(Memo, Label1, Area)
 			}
-		});
+		});*/
 	}
 
 	// процедура перерисовки окна
 	public void paint(Graphics g)
 	{
-		drawGraph(g, 50, 200);
-	}
-
-	public void drawGraph(Graphics g, int xDr, int yDr)
-	{
-		/*
-		// оси координат
-		g.drawLine(xDr, yDr, xDr + 400, yDr);
-		g.drawLine(xDr, yDr - 150, xDr, yDr + 150);
-
-		// чертить массив Y от i
-		for (int i = 1; i < 400; i++)
-		{
-			g.drawLine(xDr + i - 1, yDr - Elements[i - 1], xDr + i, yDr - Elements[i]);
-		}*/
+		// тут можно рисовать
 	}
 }
 
 // основной класс
 class TextToGraphic
 {
+	// --------------- КОНСТАНТЫ ------------------
+	// комманды
+	final static String CMDDRAW_NAME = "рисовать|нарисовать|начертить|рисуем";
+
+	// отношения
+	final static String IS_NAME = "является|являющийся";
+
+	// ключевые свойства
+	// пред-свойства
+	final static String CLOSED_NAME = "замкнутая|замкнута|замкнутой";
+	final static String UNCLOSED_NAME = "разомкнута|разомкнутый|не замкнутая|не замкнута|не замкнутой|замкнутый|замкнут|замкнутую";
+	final static String SYMMETRIC_NAME = "симметричная|симметрична|симметричный|симметричную";
+	// переходные
+	final static String HASPART_NAME = "содержащий|содержащая|содержащую";
+	final static String HAS_NAME = "имеющий|имеющая|имеющую";
+
+	// неключевые свойства
+	final static String BIG_NAME = "большой|большая";
+	final static String SMALL_NAME = "маленький|маленькая";
+
+	// простые названия фигур
+	final static String FIGURE_NAME = "фигура|фигуру";
+	final static String ELLIPSE_NAME = "эллипс|эллипса";
+	final static String OVAL_NAME = "овал";
+	final static String POLYGON_NAME = "полигон|многоугольник";
+	final static String POLYLINE_NAME = "полилиния|ломаная|полилинию|ломанную";
+	final static String CIRCLE_NAME = "круг|окружность";
+	final static String RECT_NAME = "прямоугольник";
+	final static String SQUARE_NAME = "квадрат";
+	final static String TRIANGLE_NAME = "треугольник";
+
+	// названия фигур в родительном падеже
+	final static String FIGURE_RNAME = "фигуру";
+	final static String ELLIPSE_RNAME = "эллипс";
+	final static String OVAL_RNAME = "овал";
+	final static String POLYGON_RNAME = "полигон|многоугольник";
+	final static String POLYLINE_RNAME = "полилинию|ломанную";
+	final static String CIRCLE_RNAME = "круг|окружность";
+	final static String RECT_RNAME = "прямоугольник";
+	final static String SQUARE_RNAME = "квадрат";
+	final static String TRIANGLE_RNAME = "треугольник";
+
+	// ----- составные выражения
+	// какая-либо фигура
+	final static String SOME_FIGURE = FIGURE_NAME+"|"+ELLIPSE_NAME+"|"+POLYGON_NAME+"|"+POLYLINE_NAME+"|"+CIRCLE_NAME+"|"+RECT_NAME+"|"+SQUARE_NAME+"|"+TRIANGLE_NAME+"|"+OVAL_NAME;
+
+	// какое-либо пред-свойство
+	final static String SOME_PREPROPERTY = CLOSED_NAME+"|"+UNCLOSED_NAME+"|"+SYMMETRIC_NAME+"|"+BIG_NAME+"|"+SMALL_NAME;
+
+	// ----- регулярные выражения
+	// словестный символ
+	final static String WORD_CHAR = "[а-яА-Яa-zA-Z_0-9]";
+
+	// имеет № углов
+	final static String HAS_NVERTS = "("+HAS_NAME+")([\\s]|\\.|$)";
+
+	// предложение
+	final static String PROPOSITION = WORD_CHAR+"[^.]*(\\.|$)";
+
+	// любое упоминание геометрических примитивов
+	final static String ANY_FIGURE = "(^|[\\s])+("+SOME_FIGURE+")([\\s]|\\.|,|$)";
+
+	// пред-свойство
+	final static String ANY_PREPROPERTY = "(^|[\\s])+("+SOME_PREPROPERTY+")([\\s]|\\.|,|$)+";
+	final static String ANY_PREPROPERTY2 = "(^|[\\s])*("+SOME_PREPROPERTY+")([\\s]|\\.|,|$)+";
+
+	// пред-свойства и название фигуры
+	final static String PROPERTY_FIGURE = "[\\s]*(("+SOME_PREPROPERTY+")[^.]*)+[\\s]+("+SOME_FIGURE+")([\\s]|\\.|,|$)";
 
 	// выполняется при запуске приложения
 	public static void main(String[] args)
@@ -111,80 +176,13 @@ class TextToGraphic
 
 	public static String VerifyText(String st, TextArea ta)
 	{
-		// комманды
-		final String CMDDRAW_NAME = "рисовать|нарисовать|начертить|рисуем";
-
-		// отношения
-		final String IS_NAME = "является|являющийся";
-
-		// ключевые свойства
-		// пред-свойства
-		final String CLOSED_NAME = "замкнутая|замкнута|замкнутой";
-		final String UNCLOSED_NAME = "разомкнута|не замкнутая|не замкнута|не замкнутой|замкнутый|замкнут|замкнутую";
-		final String SYMMETRIC_NAME = "симметричная|симметрична|симметричный|симметричную";
-		// переходные
-		final String HASPART_NAME = "содержащий|содержащая|содержащую";
-		final String HAS_NAME = "имеющий|имеющая|имеющую";
-
-		// неключевые свойства
-		final String BIG_NAME = "большой|большая";
-		final String SMALL_NAME = "маленький|маленькая";
-
-		// простые названия фигур
-		final String FIGURE_NAME = "фигура|фигуру";
-		final String ELLIPSE_NAME = "эллипс|эллипса";
-		final String OVAL_NAME = "овал";
-		final String POLYGON_NAME = "полигон|многоугольник";
-		final String POLYLINE_NAME = "полилиния|ломаная|полилинию|ломанную";
-		final String CIRCLE_NAME = "круг|окружность";
-		final String RECT_NAME = "прямоугольник";
-		final String SQUARE_NAME = "квадрат";
-		final String TRIANGLE_NAME = "треугольник";
-
-		// названия фигур в родительном падеже
-		final String FIGURE_RNAME = "фигуру";
-		final String ELLIPSE_RNAME = "эллипс";
-		final String OVAL_RNAME = "овал";
-		final String POLYGON_RNAME = "полигон|многоугольник";
-		final String POLYLINE_RNAME = "полилинию|ломанную";
-		final String CIRCLE_RNAME = "круг|окружность";
-		final String RECT_RNAME = "прямоугольник";
-		final String SQUARE_RNAME = "квадрат";
-		final String TRIANGLE_RNAME = "треугольник";
-
-		// ----- составные выражения
-		// какая-либо фигура
-		final String SOME_FIGURE = FIGURE_NAME+"|"+ELLIPSE_NAME+"|"+POLYGON_NAME+"|"+POLYLINE_NAME+"|"+CIRCLE_NAME+"|"+RECT_NAME+"|"+SQUARE_NAME+"|"+TRIANGLE_NAME+"|"+OVAL_NAME;
-
-		// какое-либо пред-свойство ("симметричный квадрат")
-		final String SOME_PREPROPERTY = CLOSED_NAME+"|"+UNCLOSED_NAME+"|"+SYMMETRIC_NAME+"|"+BIG_NAME+"|"+SMALL_NAME;
-
-		// ----- регулярные выражения
-		// словестный символ
-		final String WORD_CHAR = "[а-яА-Яa-zA-Z_0-9]";
-
-		// имеет № углов
-		final String HAS_NVERTS = "("+HAS_NAME+")([\\s]|\\.|$)";
-
-		// предложение
-		final String PROPOSITION = WORD_CHAR+"[^.]*(\\.|$)";
-
-		// любое упоминание геометрических примитивов
-		final String ANY_FIGURE = "(^|[\\s])+("+SOME_FIGURE+")([\\s]|\\.|,|$)";
-
-		// пред-свойство
-		final String ANY_PREPROPERTY = "(^|[\\s])+("+SOME_PREPROPERTY+")([\\s]|\\.|,|$)";
-
-		// пред-свойства и название фигуры
-		final String PROPERTY_FIGURE = "[\\s]*(("+SOME_PREPROPERTY+")[^.]*)+[\\s]+("+SOME_FIGURE+")([\\s]|$)";
-
 		// проходим все предложения
 		for (int i = 0; i < getCountOfStringsLikeThis(st, PROPOSITION); i++)
 		{
 			// сохраняем предложение в переменную
 			String Propn = getStringLikeThis(st, PROPOSITION, i);
 
-			// Есть ли упоминание, каких-либо фигур
+			// если есть упоминание каких-либо фигур
 			if (hasStringLikeThis(Propn, ANY_FIGURE))
 			{
 				// выводим предложение в TextArea
@@ -203,17 +201,28 @@ class TextToGraphic
 				// если есть пред-свойства
 				if (hasStringLikeThis(Propn, PROPERTY_FIGURE))
 				{
-					// записываем строку со свойствами
-					String StrWProper = getStringLikeThis(Propn, PROPERTY_FIGURE);
-
-					// выводим все пред-свойства
-					String PropertiesString = "Свойства фигуры \""+getStringLikeThis(getStringLikeThis(StrWProper, ANY_FIGURE), SOME_FIGURE)+"\": ";
-					for (int j = 0; j < getCountOfStringsLikeThis(StrWProper, ANY_FIGURE); j++)
+					String Next_String = Propn;
+					String This_String;
+					
+					// для каждой фигуры
+					for (int j = 0; j < getCountOfStringsLikeThis(Propn, ANY_FIGURE); j++)
 					{
-						// выводим имя, очищенное от символов
-						PropertiesString += getStringLikeThis(getStringLikeThis(StrWProper, ANY_PREPROPERTY, j), SOME_PREPROPERTY)+" ";
+						This_String = getStartStringLikeThis(Next_String, ANY_FIGURE);
+						Next_String = getEndStringLikeThis(Next_String, ANY_FIGURE);
+
+						// если содержатся пред-свойства
+						if (hasStringLikeThis(This_String, PROPERTY_FIGURE))
+						{
+							// выводим все пред-свойства
+							String PropertiesString = "Свойства фигуры \""+getStringLikeThis(getStringLikeThis(This_String, ANY_FIGURE), SOME_FIGURE)+"\": ";
+							for (int k = 0; k < getCountOfStringsLikeThis(This_String, ANY_PREPROPERTY2); k++)
+							{
+								// выводим имя, очищенное от символов
+								PropertiesString += getStringLikeThis(getStringLikeThis(This_String, ANY_PREPROPERTY2, k), SOME_PREPROPERTY)+" ";
+							}
+							ta.append(PropertiesString+"\n");
+						}
 					}
-					ta.append(PropertiesString+"\n");
 				}
 			}
 		}
@@ -272,6 +281,82 @@ class TextToGraphic
 			col++;
 		}
 		return "";
+	}
+
+	// узнать индекс символа начала вхождения n-ного выражения, соответствующего шаблону
+	public static int getStartPosStringLikeThis(String st, String mask, int ordNumber)
+	{
+		int col = 0;
+		Pattern p = Pattern.compile(mask, Pattern.CASE_INSENSITIVE);
+		Matcher m = p.matcher(st.toLowerCase());
+		while (m.find())
+		{
+			if (col == ordNumber)
+			{
+				return m.start();
+			}
+
+			col++;
+		}
+		return -1;
+	}
+
+	// узнать индекс символа конца вхождения n-ного выражения, соответствующего шаблону
+	public static int getEndPosStringLikeThis(String st, String mask, int ordNumber)
+	{
+		int col = 0;
+		Pattern p = Pattern.compile(mask, Pattern.CASE_INSENSITIVE);
+		Matcher m = p.matcher(st.toLowerCase());
+		while (m.find())
+		{
+			if (col == ordNumber)
+			{
+				return m.end();
+			}
+
+			col++;
+		}
+		return -1;
+	}
+
+	// вернуть строку, которая предшествует первому выражению, соответствующему шаблону
+	public static String getStartStringLikeThis(String st, String mask)
+	{
+		int end = getEndPosStringLikeThis(st, mask, 0);
+		if (end != -1)
+			return st.substring(0, end);
+		else
+			return st;
+	}
+
+	// вернуть строку, которая предшествует первому выражению, соответствующему шаблону
+	public static String getEndStringLikeThis(String st, String mask)
+	{
+		int end = getEndPosStringLikeThis(st, mask, 0);
+		if (end != -1)
+			return st.substring(end, st.length());
+		else
+			return st;
+	}
+
+	// (синоним) вернуть строку, которая предшествует n-ному выражению, соответствующему шаблону
+	public static String getStartStringLikeThis(String st, String mask, int ordNumber)
+	{
+		int end = getEndPosStringLikeThis(st, mask, ordNumber);
+		if (end != -1)
+			return st.substring(0, end);
+		else
+			return st;
+	}
+
+	// (синоним) вернуть строку, которая предшествует n-ному выражению, соответствующему шаблону
+	public static String getEndStringLikeThis(String st, String mask, int ordNumber)
+	{
+		int end = getEndPosStringLikeThis(st, mask, ordNumber);
+		if (end != -1)
+			return st.substring(end, st.length());
+		else
+			return st;
 	}
 }
 
