@@ -34,22 +34,27 @@ class Window1 extends Frame
 
 		// создаём лейбл
 		Label Label1 = new Label();
-		Label1.setBounds(30, 330, 400, 30);
+		Label1.setBounds(25, 330, 900, 30);
 		add(Label1);
+
+		TextArea Area = new TextArea("", 50, 50, TextArea.SCROLLBARS_HORIZONTAL_ONLY);
+		Area.setEditable(false);
+		Area.setBounds(25, 50, 450, 300);
+		add(Area);
 
 		// создание поля ввода
 		TextField Memo = new TextField(300);
-		Memo.setBounds(30, 360, 300, 30);
+		Memo.setBounds(25, 360, 450, 30);
 		add(Memo);
 
 		// создание кнопки
 		Button Btn1 = new Button("Чертить");
 		// размещение кнопки
-		Btn1.setBounds(30, 420, 100, 30);
+		Btn1.setBounds(25, 420, 100, 30);
 		add(Btn1);
 
 		// обработчик нажатия Enter
-		Memo.addActionListener(new ActLis(Memo, Label1));
+		Memo.addActionListener(new ActLis(Memo, Label1, Area));
 
 		// создание обработчика нажатия кнопки
 		Btn1.addActionListener(new ActionListener()
@@ -104,72 +109,169 @@ class TextToGraphic
 		System.out.println(new java.text.SimpleDateFormat("HH:mm:ss,S").format(java.util.Calendar.getInstance().getTime())+" Log: "+text);
 	}
 
-	public static String VerifyText(String st)
+	public static String VerifyText(String st, TextArea ta)
 	{
 		// комманды
-		final String DRAW_NAME = "рисовать|нарисовать|начертить|рисуем";
+		final String CMDDRAW_NAME = "рисовать|нарисовать|начертить|рисуем";
 
 		// отношения
-		final String IS_NAME = "является|являющийся|который является|-";
+		final String IS_NAME = "является|являющийся";
 
-		// свойства
+		// ключевые свойства
+		// пред-свойства
 		final String CLOSED_NAME = "замкнутая|замкнута|замкнутой";
 		final String UNCLOSED_NAME = "разомкнута|не замкнутая|не замкнута|не замкнутой|замкнутый|замкнут|замкнутую";
-		final String HASPART_NAME = "состоит из|имеет в составе|содержит";
 		final String SYMMETRIC_NAME = "симметричная|симметрична|симметричный|симметричную";
+		// переходные
+		final String HASPART_NAME = "содержащий|содержащая|содержащую";
+		final String HAS_NAME = "имеющий|имеющая|имеющую";
 
-		// фигуры
+		// неключевые свойства
+		final String BIG_NAME = "большой|большая";
+		final String SMALL_NAME = "маленький|маленькая";
+
+		// простые названия фигур
 		final String FIGURE_NAME = "фигура|фигуру";
-		final String ELLIPSE_NAME = "эллипс";
+		final String ELLIPSE_NAME = "эллипс|эллипса";
+		final String OVAL_NAME = "овал";
 		final String POLYGON_NAME = "полигон|многоугольник";
-		final String POLYLINE_NAME = "полилиния|ломаная";
+		final String POLYLINE_NAME = "полилиния|ломаная|полилинию|ломанную";
 		final String CIRCLE_NAME = "круг|окружность";
 		final String RECT_NAME = "прямоугольник";
 		final String SQUARE_NAME = "квадрат";
 		final String TRIANGLE_NAME = "треугольник";
 
-		// составные выражения
-		// какая-либо фигура 
-		final String SOME_FIGURE = FIGURE_NAME+"|"+ELLIPSE_NAME+"|"+POLYGON_NAME+"|"+POLYLINE_NAME+"|"+CIRCLE_NAME+"|"+RECT_NAME+"|"+SQUARE_NAME+"|"+TRIANGLE_NAME;
-		
-		// какое-либо пред-свойство (симметричный квадрат)
-		final String SOME_PREPROPERTY = CLOSED_NAME+"|"+UNCLOSED_NAME+"|"+SYMMETRIC_NAME;
+		// названия фигур в родительном падеже
+		final String FIGURE_RNAME = "фигуру";
+		final String ELLIPSE_RNAME = "эллипс";
+		final String OVAL_RNAME = "овал";
+		final String POLYGON_RNAME = "полигон|многоугольник";
+		final String POLYLINE_RNAME = "полилинию|ломанную";
+		final String CIRCLE_RNAME = "круг|окружность";
+		final String RECT_RNAME = "прямоугольник";
+		final String SQUARE_RNAME = "квадрат";
+		final String TRIANGLE_RNAME = "треугольник";
 
-		// регулярные выражения
-		// есть ли в тексте любая команда
-		final String ANY_COMMAND = "[^.]*("+DRAW_NAME+")[^.]+("+SOME_FIGURE+")(\\.|$)";
+		// ----- составные выражения
+		// какая-либо фигура
+		final String SOME_FIGURE = FIGURE_NAME+"|"+ELLIPSE_NAME+"|"+POLYGON_NAME+"|"+POLYLINE_NAME+"|"+CIRCLE_NAME+"|"+RECT_NAME+"|"+SQUARE_NAME+"|"+TRIANGLE_NAME+"|"+OVAL_NAME;
 
-		// есть ли в тексте простая команда
-		final String SIMPLE_COMMAND = "[^.]*("+DRAW_NAME+")[\\s]+("+SOME_FIGURE+")(\\.|$)";
+		// какое-либо пред-свойство ("симметричный квадрат")
+		final String SOME_PREPROPERTY = CLOSED_NAME+"|"+UNCLOSED_NAME+"|"+SYMMETRIC_NAME+"|"+BIG_NAME+"|"+SMALL_NAME;
 
-		// рисовать+описание+название фигуры
-		final String ADV_COMMAND = "[^.]*("+DRAW_NAME+")+[\\s]+("+SOME_PREPROPERTY+")+[\\s]+("+SOME_FIGURE+")(\\.|$)";
+		// ----- регулярные выражения
+		// словестный символ
+		final String WORD_CHAR = "[а-яА-Яa-zA-Z_0-9]";
 
-		// смотрим, есть ли команда
-		if (IsStringLikeThis(st, ANY_COMMAND))
+		// имеет № углов
+		final String HAS_NVERTS = "("+HAS_NAME+")([\\s]|\\.|$)";
+
+		// предложение
+		final String PROPOSITION = WORD_CHAR+"[^.]*(\\.|$)";
+
+		// любое упоминание геометрических примитивов
+		final String ANY_FIGURE = "(^|[\\s])+("+SOME_FIGURE+")([\\s]|\\.|,|$)";
+
+		// пред-свойство
+		final String ANY_PREPROPERTY = "(^|[\\s])+("+SOME_PREPROPERTY+")([\\s]|\\.|,|$)";
+
+		// пред-свойства и название фигуры
+		final String PROPERTY_FIGURE = "[\\s]*(("+SOME_PREPROPERTY+")[^.]*)+[\\s]+("+SOME_FIGURE+")([\\s]|$)";
+
+		// проходим все предложения
+		for (int i = 0; i < getCountOfStringsLikeThis(st, PROPOSITION); i++)
 		{
-			// ищем простую комманду
-			if (IsStringLikeThis(st, SIMPLE_COMMAND))
+			// сохраняем предложение в переменную
+			String Propn = getStringLikeThis(st, PROPOSITION, i);
+
+			// Есть ли упоминание, каких-либо фигур
+			if (hasStringLikeThis(Propn, ANY_FIGURE))
 			{
-				return "Команда: "+st;
-			}
-			else if (IsStringLikeThis(st, ADV_COMMAND)) // если такой нет, ищем более сложную команду
-			{
-				return "Команда с условиями: "+st;
+				// выводим предложение в TextArea
+				ta.append("Предложение: "+Propn+"\n");
+
+				// выводим название всех фигур в TextArea
+				String FiguresString = "Фигуры: ";
+				for (int j = 0; j < getCountOfStringsLikeThis(Propn, ANY_FIGURE); j++)
+				{
+					// выводим имя, очищенное от символов
+					FiguresString += getStringLikeThis(getStringLikeThis(Propn, ANY_FIGURE, j), SOME_FIGURE)+" ";
+				}
+				ta.append(FiguresString+"\n");
+
+
+				// если есть пред-свойства
+				if (hasStringLikeThis(Propn, PROPERTY_FIGURE))
+				{
+					// записываем строку со свойствами
+					String StrWProper = getStringLikeThis(Propn, PROPERTY_FIGURE);
+
+					// выводим все пред-свойства
+					String PropertiesString = "Свойства фигуры \""+getStringLikeThis(getStringLikeThis(StrWProper, ANY_FIGURE), SOME_FIGURE)+"\": ";
+					for (int j = 0; j < getCountOfStringsLikeThis(StrWProper, ANY_FIGURE); j++)
+					{
+						// выводим имя, очищенное от символов
+						PropertiesString += getStringLikeThis(getStringLikeThis(StrWProper, ANY_PREPROPERTY, j), SOME_PREPROPERTY)+" ";
+					}
+					ta.append(PropertiesString+"\n");
+				}
 			}
 		}
-		return "";
+
+		return "Количество предложений: "+getCountOfStringsLikeThis(st, PROPOSITION);
 	}
-	
-	public static boolean IsStringLikeThis(String st, String mask)
+
+	// содержит ли текст выражения, соответствующие шаблону?
+	public static boolean hasStringLikeThis(String st, String mask)
 	{
 		Pattern p = Pattern.compile(mask, Pattern.CASE_INSENSITIVE);
-		Matcher m = p.matcher(st);
+		Matcher m = p.matcher(st.toLowerCase());
 		while (m.find())
 		{
 			return true;
 		}
 		return false;
+	}
+
+	// вернуть количество выражений, соответствующих шаблону
+	public static int getCountOfStringsLikeThis(String st, String mask)
+	{
+		int col = 0;
+		Pattern p = Pattern.compile(mask, Pattern.CASE_INSENSITIVE);
+		Matcher m = p.matcher(st.toLowerCase());
+		while (m.find())
+		{
+			col++;
+		}
+		return col;
+	}
+
+	// вернуть первое выражение, которое соответствует шаблону
+	public static String getStringLikeThis(String st, String mask)
+	{
+		Pattern p = Pattern.compile(mask, Pattern.CASE_INSENSITIVE);
+		Matcher m = p.matcher(st.toLowerCase());
+		while (m.find())
+		{
+			return m.group();
+		}
+		return "";
+	}
+
+	// (синоним) вернуть n-ное выражение (начиная с нуля), которое соответствует шаблону
+	public static String getStringLikeThis(String st, String mask, int ordNumber)
+	{
+		int col = 0;
+		Pattern p = Pattern.compile(mask, Pattern.CASE_INSENSITIVE);
+		Matcher m = p.matcher(st.toLowerCase());
+		while (m.find())
+		{
+			if (col == ordNumber)
+				return m.group();
+
+			col++;
+		}
+		return "";
 	}
 }
 
@@ -178,16 +280,19 @@ class ActLis implements ActionListener
 {
 	private TextField tf;
 	private Label lb;
+	private TextArea ta;
 
-	ActLis(TextField tf, Label lb)
+	ActLis(TextField tf, Label lb, TextArea ta)
 	{
 		this.tf = tf;
 		this.lb = lb;
+		this.ta = ta;
 	}
 
 	public void actionPerformed(ActionEvent ae)
 	{
-		lb.setText(TextToGraphic.VerifyText(tf.getText()));
+		ta.replaceRange("", 0, 10000);
+		lb.setText(TextToGraphic.VerifyText(tf.getText(), ta));
 		tf.setText("");
 	}
 }
