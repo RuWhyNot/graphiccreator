@@ -6,6 +6,7 @@ import java.io.FileNotFoundException;
 import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.Vector;
 
 /*
  *	В коде использована прямая конкатенация строк, что является неоптимальным решением.
@@ -13,6 +14,58 @@ import java.util.regex.Pattern;
  *	строк, то стоит использовать StringBuffer для сложения строк.
  */
 
+class Figure
+{
+	// что за фигура
+	int Class;
+	// размер
+	int Size;
+
+	Figure(int Class)
+	{
+		this.Class = Class;
+		Size = 1;
+	}
+
+	Figure(int Class, int Size)
+	{
+		this.Class = Class;
+		this.Size = Size;
+	}
+}
+
+class FiguresMass
+{
+	private Figure[] Mass;
+	private int Count;
+
+	FiguresMass()
+	{
+		Mass = new Figure[50];
+		Count = 0;
+	}
+
+	public void reset()
+	{
+		Count = 0;
+	}
+
+	public int count()
+	{
+		return Count;
+	}
+
+	public Figure getFigure(int pos)
+	{
+		return Mass[pos];
+	}
+
+	public void insertFigure(Figure fig)
+	{
+		Mass[Count] = fig;
+		Count++;
+	}
+}
 
 // наше окно
 class Window1 extends Frame
@@ -20,6 +73,14 @@ class Window1 extends Frame
 	// массив высот для построения графика
 	private int[] Elements = new int[400]; // желательно установить размер после обращения к файлу
 
+	// массив фигур
+	FiguresMass Figures = new FiguresMass();
+
+	// объекты окна
+	TextField Field;
+	Label Label1;
+	TextArea Area;
+	
 	// Инициализация
 	Window1(String s)
 	{
@@ -40,50 +101,94 @@ class Window1 extends Frame
 		});
 
 		// создаём лейбл
-		Label Label1 = new Label();
-		Label1.setBounds(25, 330, 900, 30);
+		Label1 = new Label();
+		Label1.setBounds(525, 360, 1000, 30);
 		add(Label1);
 
-		TextArea Area = new TextArea("", 50, 50, TextArea.SCROLLBARS_BOTH);
+		// поле вывода
+		Area = new TextArea("", 50, 50, TextArea.SCROLLBARS_BOTH);
 		Area.setEditable(false);
-		Area.setBounds(25, 50, 450, 300);
+		Area.setBounds(525, 50, 450, 300);
 		add(Area);
 
 		// создание поля ввода
-		TextField Memo = new TextField(300);
-		Memo.setBounds(25, 360, 450, 30);
-		add(Memo);
+		Field = new TextField(300);
+		Field.setBounds(25, 360, 450, 30);
+		add(Field);
 
 		// создание кнопки
-		Button Btn1 = new Button("Чертить");
+		Button Btn1 = new Button("Очистить");
 		// размещение кнопки
 		Btn1.setBounds(25, 420, 100, 30);
 		add(Btn1);
 
 		// обработчик нажатия Enter
-		Memo.addActionListener(new ActLis(Memo, Label1, Area));
+		Field.addActionListener(new ActLis(this));
+		Field.addTextListener(new ActLis(this));
 
 		// создание обработчика нажатия кнопки
-		Btn1.addActionListener(new ActLis(Memo, Label1, Area));
-		
-		/*Btn1.addActionListener(new ActionListener()
-		{
-			public void actionPerformed(ActionEvent ae)
-			{
-				TextToGraphic.Log("Нажали кнопку");
-
-				// перерисовать
-				paint(getGraphics());
-				
-				new ActLis(Memo, Label1, Area)
-			}
-		});*/
+		Btn1.addActionListener(new ActLis(this));
 	}
 
 	// процедура перерисовки окна
 	public void paint(Graphics g)
 	{
-		// тут можно рисовать
+		int FiguresCount = Figures.count();
+		int xPos = 0, yPos = 0, xSize = 1, ySize = 0, Wid = 0;
+		int ImageX = 100, ImageY = 50, ImageSize = 300;
+
+		boolean isFinish = false;
+		while (!isFinish)
+		{
+			if (FiguresCount <= xSize * xSize)
+			{
+				ySize = FiguresCount / xSize + 1;
+				Wid = ImageSize/xSize;
+				isFinish = true;
+			}
+			else
+				xSize++;
+		}
+
+		for (int i = 0; i < FiguresCount; i++)
+		{
+			xPos = i%xSize;
+			yPos = i/xSize;
+			drawFigure(g, Figures.getFigure(i).Class, Figures.getFigure(i).Size, xPos * Wid + ImageX, yPos * Wid + ImageY, (int)Math.round(Wid * 0.9));
+		}
+	}
+
+	void drawFigure(Graphics g, int figure, int size, int xPos, int yPos, int Wid)
+	{
+		// масштабируем 0 - маленький, 1 - нормальный, 2 большой
+		Wid = (int)Math.round(Wid * (size + 1) / 3.0);
+
+		// рисуем выбранную фигуру
+		switch (figure)
+		{
+			case 0: // круг
+				g.drawOval(xPos, yPos, Wid, Wid);
+				break;
+			case 1: // квадрат
+				g.drawRect(xPos, yPos, Wid, Wid);
+				break;
+			case 2: // прямоугольник
+				g.drawRect(xPos, yPos + Wid / 4, Wid, Wid / 2);
+				break;
+			case 3: // овал
+				g.drawOval(xPos, yPos + Wid / 4, Wid, Wid / 2);
+				break;
+			case 4: // эллипс
+				g.drawOval(xPos, yPos + Wid / 4, Wid, Wid / 2);
+				break;
+			case 5: // треугольник
+				int[] arrX = {xPos, xPos + Wid, xPos + Wid / 2};
+				int[] arrY = {yPos + Wid - Wid / 4, yPos + Wid - Wid / 4, yPos + Wid / 2 - Wid / 4};
+				g.drawPolygon(arrX, arrY, 3);
+				break;
+			default:
+				break;
+		}
 	}
 }
 
@@ -164,7 +269,7 @@ class TextToGraphic
 	{
 		// создаём новое окно и указываем заголовок
 		Window1 f = new Window1("Чертить");
-		f.setSize(500, 500);
+		f.setSize(1000, 500);
 		f.setVisible(true);
 	}
 
@@ -174,7 +279,7 @@ class TextToGraphic
 		System.out.println(new java.text.SimpleDateFormat("HH:mm:ss,S").format(java.util.Calendar.getInstance().getTime())+" Log: "+text);
 	}
 
-	public static String VerifyText(String st, TextArea ta)
+	public static String VerifyText(String st, TextArea ta, FiguresMass fr)
 	{
 		// проходим все предложения
 		for (int i = 0; i < getCountOfStringsLikeThis(st, PROPOSITION); i++)
@@ -190,10 +295,13 @@ class TextToGraphic
 
 				// выводим название всех фигур в TextArea
 				String FiguresString = "Фигуры: ";
+				String FigureName = "";
 				for (int j = 0; j < getCountOfStringsLikeThis(Propn, ANY_FIGURE); j++)
 				{
 					// выводим имя, очищенное от символов
-					FiguresString += getStringLikeThis(getStringLikeThis(Propn, ANY_FIGURE, j), SOME_FIGURE)+" ";
+					FigureName = getStringLikeThis(getStringLikeThis(Propn, ANY_FIGURE, j), SOME_FIGURE);
+					fr.insertFigure(new Figure(getFigureID(FigureName)));
+					FiguresString += FigureName + " ";
 				}
 				ta.append(FiguresString+"\n");
 
@@ -203,7 +311,7 @@ class TextToGraphic
 				{
 					String Next_String = Propn;
 					String This_String;
-					
+
 					// для каждой фигуры
 					for (int j = 0; j < getCountOfStringsLikeThis(Propn, ANY_FIGURE); j++)
 					{
@@ -231,7 +339,7 @@ class TextToGraphic
 	}
 
 	// содержит ли текст выражения, соответствующие шаблону?
-	public static boolean hasStringLikeThis(String st, String mask)
+	private static boolean hasStringLikeThis(String st, String mask)
 	{
 		Pattern p = Pattern.compile(mask, Pattern.CASE_INSENSITIVE);
 		Matcher m = p.matcher(st.toLowerCase());
@@ -243,7 +351,7 @@ class TextToGraphic
 	}
 
 	// вернуть количество выражений, соответствующих шаблону
-	public static int getCountOfStringsLikeThis(String st, String mask)
+	private static int getCountOfStringsLikeThis(String st, String mask)
 	{
 		int col = 0;
 		Pattern p = Pattern.compile(mask, Pattern.CASE_INSENSITIVE);
@@ -256,7 +364,7 @@ class TextToGraphic
 	}
 
 	// вернуть первое выражение, которое соответствует шаблону
-	public static String getStringLikeThis(String st, String mask)
+	private static String getStringLikeThis(String st, String mask)
 	{
 		Pattern p = Pattern.compile(mask, Pattern.CASE_INSENSITIVE);
 		Matcher m = p.matcher(st.toLowerCase());
@@ -268,7 +376,7 @@ class TextToGraphic
 	}
 
 	// (синоним) вернуть n-ное выражение (начиная с нуля), которое соответствует шаблону
-	public static String getStringLikeThis(String st, String mask, int ordNumber)
+	private static String getStringLikeThis(String st, String mask, int ordNumber)
 	{
 		int col = 0;
 		Pattern p = Pattern.compile(mask, Pattern.CASE_INSENSITIVE);
@@ -284,7 +392,7 @@ class TextToGraphic
 	}
 
 	// узнать индекс символа начала вхождения n-ного выражения, соответствующего шаблону
-	public static int getStartPosStringLikeThis(String st, String mask, int ordNumber)
+	private static int getStartPosStringLikeThis(String st, String mask, int ordNumber)
 	{
 		int col = 0;
 		Pattern p = Pattern.compile(mask, Pattern.CASE_INSENSITIVE);
@@ -302,7 +410,7 @@ class TextToGraphic
 	}
 
 	// узнать индекс символа конца вхождения n-ного выражения, соответствующего шаблону
-	public static int getEndPosStringLikeThis(String st, String mask, int ordNumber)
+	private static int getEndPosStringLikeThis(String st, String mask, int ordNumber)
 	{
 		int col = 0;
 		Pattern p = Pattern.compile(mask, Pattern.CASE_INSENSITIVE);
@@ -320,7 +428,7 @@ class TextToGraphic
 	}
 
 	// вернуть строку, которая предшествует первому выражению, соответствующему шаблону
-	public static String getStartStringLikeThis(String st, String mask)
+	private static String getStartStringLikeThis(String st, String mask)
 	{
 		int end = getEndPosStringLikeThis(st, mask, 0);
 		if (end != -1)
@@ -330,7 +438,7 @@ class TextToGraphic
 	}
 
 	// вернуть строку, которая предшествует первому выражению, соответствующему шаблону
-	public static String getEndStringLikeThis(String st, String mask)
+	private static String getEndStringLikeThis(String st, String mask)
 	{
 		int end = getEndPosStringLikeThis(st, mask, 0);
 		if (end != -1)
@@ -340,7 +448,7 @@ class TextToGraphic
 	}
 
 	// (синоним) вернуть строку, которая предшествует n-ному выражению, соответствующему шаблону
-	public static String getStartStringLikeThis(String st, String mask, int ordNumber)
+	private static String getStartStringLikeThis(String st, String mask, int ordNumber)
 	{
 		int end = getEndPosStringLikeThis(st, mask, ordNumber);
 		if (end != -1)
@@ -350,7 +458,7 @@ class TextToGraphic
 	}
 
 	// (синоним) вернуть строку, которая предшествует n-ному выражению, соответствующему шаблону
-	public static String getEndStringLikeThis(String st, String mask, int ordNumber)
+	private static String getEndStringLikeThis(String st, String mask, int ordNumber)
 	{
 		int end = getEndPosStringLikeThis(st, mask, ordNumber);
 		if (end != -1)
@@ -358,26 +466,64 @@ class TextToGraphic
 		else
 			return st;
 	}
+
+	private static int getFigureID(String FigureName)
+	{
+		if (hasStringLikeThis(FigureName, CIRCLE_NAME))
+			return 0;
+		else if (hasStringLikeThis(FigureName, SQUARE_NAME))
+			return 1;
+		else if (hasStringLikeThis(FigureName, RECT_NAME))
+			return 2;
+		else if (hasStringLikeThis(FigureName, OVAL_NAME))
+			return 3;
+		else if (hasStringLikeThis(FigureName, ELLIPSE_NAME))
+			return 4;
+		else if (hasStringLikeThis(FigureName, TRIANGLE_NAME))
+			return 5;
+		Log("\""+FigureName+"\"");
+
+		return -1;
+	}
 }
 
 // обработка действий
-class ActLis implements ActionListener
+class ActLis implements ActionListener, TextListener
 {
 	private TextField tf;
 	private Label lb;
 	private TextArea ta;
+	private FiguresMass fr;
+	private Window1 window;
 
-	ActLis(TextField tf, Label lb, TextArea ta)
+	ActLis(Window1 window)
 	{
-		this.tf = tf;
-		this.lb = lb;
-		this.ta = ta;
+		this.window = window;
+		this.tf = window.Field;
+		this.lb = window.Label1;
+		this.ta = window.Area;
+		this.fr = window.Figures;
 	}
-
+	
+	// при нажатии Enter или кнопки
 	public void actionPerformed(ActionEvent ae)
 	{
 		ta.replaceRange("", 0, 10000);
-		lb.setText(TextToGraphic.VerifyText(tf.getText(), ta));
+		fr.reset();
+		//lb.setText(TextToGraphic.VerifyText(tf.getText(), ta, fr));
 		tf.setText("");
+		window.update(window.getGraphics());
+		window.paint(window.getGraphics());
+	}
+
+	// при изменении текста
+	public void textValueChanged(TextEvent e)
+	{
+		ta.replaceRange("", 0, 10000);
+		fr.reset();
+		lb.setText(TextToGraphic.VerifyText(tf.getText(), ta, fr));
+		//tf.setText("");
+		window.update(window.getGraphics());
+		window.paint(window.getGraphics());
 	}
 }
