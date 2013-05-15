@@ -14,26 +14,104 @@ import java.util.Vector;
  *	строк, то стоит использовать StringBuffer для сложения строк.
  */
 
-class Figure
+// свойство
+class Property
 {
-	// что за фигура
-	int Class;
-	// размер
-	int Size;
-
-	Figure(int Class)
+	public enum PropertyType
 	{
-		this.Class = Class;
-		Size = 1;
+		PT_SIZE, // 0 - маленький, 1 - средний, 2 - большой
+		PT_SYMMETRIC, // 0 - не симметричен, 1 - симетричен относительно прямой, 2 - симметричен относительно двух перпендикулярных прямых
+		PT_CLOSED // 0 - разомкнут, 1 - замкнут
+	};
+
+	// тип свойства
+	private PropertyType Type;
+	// значение свойства
+	private int Value;
+
+	// инициализация
+	Property(PropertyType Type)
+	{
+		this.Type = Type;
 	}
 
-	Figure(int Class, int Size)
+	// инициализация со значением
+	Property(PropertyType Type, int Value)
 	{
-		this.Class = Class;
-		this.Size = Size;
+		this.Type = Type;
+		this.Value = Value;
+	}
+
+	public void setValue(int Value)
+	{
+		this.Value = Value;
+	}
+
+	// получить тип свойства
+	public PropertyType type()
+	{
+		return Type;
+	}
+
+	public int value()
+	{
+		return Value;
 	}
 }
 
+// фигура
+class Figure
+{
+	// что за фигура
+	private int Class;
+
+	// массив свойств
+	private Property[] Properties = new Property[3];
+	private int PropCount;
+
+	// инициализация
+	Figure(int Class)
+	{
+		this.Class = Class;
+		PropCount = 0;
+	}
+
+	// добавить новое свойство фигуры
+	public void AddProperty(Property Prope)
+	{
+		Properties[PropCount] = Prope;
+		PropCount++;
+	}
+
+	public Property getProperty(int PropID)
+	{
+		return Properties[PropID];
+	}
+
+	public int propertyCount()
+	{
+		return PropCount;
+	}
+
+	public int fclass()
+	{
+		return Class;
+	}
+
+	public int size()
+	{
+		for (int i = 0; i < PropCount; i++)
+		{
+			if (Properties[i].type() == Property.PropertyType.PT_SIZE)
+				return Properties[i].value();
+		}
+
+		// если не установлен размер, ставим "средний"
+		return 1;
+	}
+}
+
+// массив фигур
 class FiguresMass
 {
 	private Figure[] Mass;
@@ -70,9 +148,6 @@ class FiguresMass
 // наше окно
 class Window1 extends Frame
 {
-	// массив высот для построения графика
-	private int[] Elements = new int[400]; // желательно установить размер после обращения к файлу
-
 	// массив фигур
 	FiguresMass Figures = new FiguresMass();
 
@@ -80,7 +155,7 @@ class Window1 extends Frame
 	TextField Field;
 	Label Label1;
 	TextArea Area;
-	
+
 	// Инициализация
 	Window1(String s)
 	{
@@ -154,7 +229,7 @@ class Window1 extends Frame
 		{
 			xPos = i%xSize;
 			yPos = i/xSize;
-			drawFigure(g, Figures.getFigure(i).Class, Figures.getFigure(i).Size, xPos * Wid + ImageX, yPos * Wid + ImageY, (int)Math.round(Wid * 0.9));
+			drawFigure(g, Figures.getFigure(i).fclass(), Figures.getFigure(i).size(), xPos * Wid + ImageX, yPos * Wid + ImageY, (int)Math.round(Wid * 0.9));
 		}
 	}
 
@@ -273,7 +348,7 @@ class TextToGraphic
 		f.setVisible(true);
 	}
 
-	// вывод лога в консоль
+	// вывод лога с временным штампом в консоль
 	public static void Log(String text)
 	{
 		System.out.println(new java.text.SimpleDateFormat("HH:mm:ss,S").format(java.util.Calendar.getInstance().getTime())+" Log: "+text);
@@ -300,6 +375,7 @@ class TextToGraphic
 				{
 					// выводим имя, очищенное от символов
 					FigureName = getStringLikeThis(getStringLikeThis(Propn, ANY_FIGURE, j), SOME_FIGURE);
+					// отправить фигуру на рисование
 					fr.insertFigure(new Figure(getFigureID(FigureName)));
 					FiguresString += FigureName + " ";
 				}
@@ -467,6 +543,7 @@ class TextToGraphic
 			return st;
 	}
 
+	// определить ID фигуры
 	private static int getFigureID(String FigureName)
 	{
 		if (hasStringLikeThis(FigureName, CIRCLE_NAME))
@@ -483,6 +560,12 @@ class TextToGraphic
 			return 5;
 		Log("\""+FigureName+"\"");
 
+		return -1;
+	}
+
+	// определить свойство
+	private static int getProperty(String PropertyName)
+	{
 		return -1;
 	}
 }
@@ -504,13 +587,12 @@ class ActLis implements ActionListener, TextListener
 		this.ta = window.Area;
 		this.fr = window.Figures;
 	}
-	
+
 	// при нажатии Enter или кнопки
 	public void actionPerformed(ActionEvent ae)
 	{
 		ta.replaceRange("", 0, 10000);
 		fr.reset();
-		//lb.setText(TextToGraphic.VerifyText(tf.getText(), ta, fr));
 		tf.setText("");
 		window.update(window.getGraphics());
 		window.paint(window.getGraphics());
@@ -522,7 +604,6 @@ class ActLis implements ActionListener, TextListener
 		ta.replaceRange("", 0, 10000);
 		fr.reset();
 		lb.setText(TextToGraphic.VerifyText(tf.getText(), ta, fr));
-		//tf.setText("");
 		window.update(window.getGraphics());
 		window.paint(window.getGraphics());
 	}
