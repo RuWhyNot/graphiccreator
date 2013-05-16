@@ -1,17 +1,17 @@
 import java.awt.*;
 import java.awt.event.*;
+import java.sql.*;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.Vector;
 
 /*
  *	В коде использована прямая конкатенация строк, что является неоптимальным решением.
- *	Если, в будущем, приложение планируется использовать для обработки большого количества
- *	строк, то стоит использовать StringBuffer для сложения строк.
+ *	Если, в будущем, приложение планируется использовать для обработки больших текстов,
+ *	то стоит использовать StringBuffer для сложения строк.
  */
 
 // свойство
@@ -21,13 +21,14 @@ class Property
 	{
 		PT_SIZE, // 0 - маленький, 1 - средний, 2 - большой
 		PT_SYMMETRIC, // 0 - не симметричен, 1 - симетричен относительно прямой, 2 - симметричен относительно двух перпендикулярных прямых
-		PT_CLOSED // 0 - разомкнут, 1 - замкнут
+		PT_CLOSED, // 0 - разомкнут, 1 - замкнут
+		PT_NONE // пустое свойство (не обрабатывается)
 	};
 
 	// тип свойства
 	private PropertyType Type;
 	// значение свойства
-	private int Value;
+	private int Value = -1;
 
 	// инициализация
 	Property(PropertyType Type)
@@ -40,6 +41,12 @@ class Property
 	{
 		this.Type = Type;
 		this.Value = Value;
+	}
+
+	// инициализация свойства-пустышки (если свойство не распознано)
+	Property()
+	{
+		Type = PropertyType.PT_NONE;
 	}
 
 	public void setValue(int Value)
@@ -66,7 +73,7 @@ class Figure
 	private int Class;
 
 	// массив свойств
-	private Property[] Properties = new Property[3];
+	private Property[] Properties = new Property[10];
 	private int PropCount;
 
 	// инициализация
@@ -77,10 +84,34 @@ class Figure
 	}
 
 	// добавить новое свойство фигуры
-	public void AddProperty(Property Prope)
+	public void addProperty(Property Prope)
 	{
-		Properties[PropCount] = Prope;
-		PropCount++;
+		// если свойство и значение свойства заданы
+		if (Prope.type() != Property.PropertyType.PT_NONE && Prope.value() != -1)
+		{
+			// ищем, не было ли уже такого свойства
+			boolean duplicate = false;
+			for (int i = 0; i < PropCount; i++)
+			{
+				// если такое свойство есть
+				if (Properties[i].type() == Prope.type())
+				{
+					// если значения свойств разнятся, выводим ошибку
+					if (Properties[i].value() != Prope.value())
+						TextToGraphic.Log("Попытка задать конфликтующее свойство: "+Properties[i].type());
+
+					duplicate = true;
+				}
+			}
+
+			// если всё в порядке
+			if (!duplicate)
+			{
+				// добавляем свойство фигуре
+				Properties[PropCount] = Prope;
+				PropCount++;
+			}
+		}
 	}
 
 	public Property getProperty(int PropID)
@@ -312,6 +343,17 @@ class TextToGraphic
 	final static String SQUARE_RNAME = "квадрат";
 	final static String TRIANGLE_RNAME = "треугольник";
 
+	// названия фигур в предложном падеже
+	final static String FIGURE_PNAME = "фигуре";
+	final static String ELLIPSE_PNAME = "эллипсе";
+	final static String OVAL_PNAME = "овале";
+	final static String POLYGON_PNAME = "полигоне|многоугольнике";
+	final static String POLYLINE_PNAME = "полилинии|ломанной";
+	final static String CIRCLE_PNAME = "круге|окружности";
+	final static String RECT_PNAME = "прямоугольнике";
+	final static String SQUARE_PNAME = "квадрате";
+	final static String TRIANGLE_PNAME = "треугольнике";
+
 	// ----- составные выражения
 	// какая-либо фигура
 	final static String SOME_FIGURE = FIGURE_NAME+"|"+ELLIPSE_NAME+"|"+POLYGON_NAME+"|"+POLYLINE_NAME+"|"+CIRCLE_NAME+"|"+RECT_NAME+"|"+SQUARE_NAME+"|"+TRIANGLE_NAME+"|"+OVAL_NAME;
@@ -340,12 +382,99 @@ class TextToGraphic
 	final static String PROPERTY_FIGURE = "[\\s]*(("+SOME_PREPROPERTY+")[^.]*)+[\\s]+("+SOME_FIGURE+")([\\s]|\\.|,|$)";
 
 	// выполняется при запуске приложения
-	public static void main(String[] args)
+	public static void main(String[] args) throws ClassNotFoundException
 	{
+		Log("Работаем с базой данных");
+
+		createNewDataBase();
+		readDataBase();
+
+		Log("Открытие окна");
 		// создаём новое окно и указываем заголовок
 		Window1 f = new Window1("Чертить");
 		f.setSize(1000, 500);
 		f.setVisible(true);
+	}
+	
+	// создаём стандартные записи в БД
+	public static void createNewDataBase() throws ClassNotFoundException
+	{
+		// подключаем драйвер для работы с SQLite
+		Class.forName("org.sqlite.JDBC");
+		
+		Connection connection = null;
+		try
+		{
+			// создаём подключение к БД
+			connection = DriverManager.getConnection("jdbc:sqlite:onto.db");
+			Statement statement = connection.createStatement();
+			statement.setQueryTimeout(30);
+			statement.executeUpdate("drop table if exists figures");
+			statement.executeUpdate("create table figures (id integer, iname string, rname string, dname string, vname string, tname string, pname string)");
+			statement.executeUpdate("insert into figures values(1, 'фигура', 'фигуры', 'фигуре', 'фигуру', 'фигурой', 'фигуре')");
+		}
+		catch(SQLException e)
+		{
+			System.err.println(e.getMessage());
+		}
+		finally
+		{
+			try
+			{
+				if(connection != null)
+				connection.close();
+			}
+			catch(SQLException e)
+			{
+				// если не удалось закрыть подключение к БД
+				System.err.println(e);
+			}
+		}
+	}
+	
+	// считываем данные из БД
+	public static void readDataBase() throws ClassNotFoundException
+	{
+		// подключаем драйвер для работы с SQLite
+		Class.forName("org.sqlite.JDBC");
+		
+		Connection connection = null;
+		try
+		{
+			// создаём подключение к БД
+			connection = DriverManager.getConnection("jdbc:sqlite:onto.db");
+			Statement statement = connection.createStatement();
+			statement.setQueryTimeout(30);
+			
+			ResultSet rs = statement.executeQuery("select * from figures");
+			while(rs.next())
+			{
+				Log("Именительный: " + rs.getString("iname"));
+				Log("Родительный: " + rs.getString("rname"));
+				Log("Дательный: " + rs.getString("dname"));
+				Log("Винительный: " + rs.getString("vname"));
+				Log("Творительный: " + rs.getString("tname"));
+				Log("Предложный: " + rs.getString("pname"));
+				//Log("id = " + rs.getInt("id"));
+			}
+		}
+		catch(SQLException e)
+		{
+			System.err.println(e.getMessage());
+		}
+		finally
+		{
+			try
+			{
+				if(connection != null)
+				connection.close();
+			}
+			catch(SQLException e)
+			{
+				// если не удалось закрыть подключение к БД
+				System.err.println(e);
+			}
+		}
 	}
 
 	// вывод лога с временным штампом в консоль
@@ -368,45 +497,40 @@ class TextToGraphic
 				// выводим предложение в TextArea
 				ta.append("Предложение: "+Propn+"\n");
 
-				// выводим название всех фигур в TextArea
-				String FiguresString = "Фигуры: ";
-				String FigureName = "";
+				String Next_String = Propn;
+				String This_String;
+				String FigureName;
+				String PropertyName;
+
+				// для каждой фигуры
 				for (int j = 0; j < getCountOfStringsLikeThis(Propn, ANY_FIGURE); j++)
 				{
-					// выводим имя, очищенное от символов
+					This_String = getStartStringLikeThis(Next_String, ANY_FIGURE);
+					Next_String = getEndStringLikeThis(Next_String, ANY_FIGURE);
+
+					// создаём фигуру и выводим её название
 					FigureName = getStringLikeThis(getStringLikeThis(Propn, ANY_FIGURE, j), SOME_FIGURE);
-					// отправить фигуру на рисование
-					fr.insertFigure(new Figure(getFigureID(FigureName)));
-					FiguresString += FigureName + " ";
-				}
-				ta.append(FiguresString+"\n");
+					Figure thisFigure = new Figure(getFigureID(FigureName));;
+					ta.append("Обнаружена фигура: "+FigureName+"\n");
 
-
-				// если есть пред-свойства
-				if (hasStringLikeThis(Propn, PROPERTY_FIGURE))
-				{
-					String Next_String = Propn;
-					String This_String;
-
-					// для каждой фигуры
-					for (int j = 0; j < getCountOfStringsLikeThis(Propn, ANY_FIGURE); j++)
+					// если содержатся пред-свойства
+					if (hasStringLikeThis(This_String, PROPERTY_FIGURE))
 					{
-						This_String = getStartStringLikeThis(Next_String, ANY_FIGURE);
-						Next_String = getEndStringLikeThis(Next_String, ANY_FIGURE);
-
-						// если содержатся пред-свойства
-						if (hasStringLikeThis(This_String, PROPERTY_FIGURE))
+						// находим все пред-свойства
+						String PropertiesString = "Свойства фигуры \""+FigureName+"\": ";
+						for (int k = 0; k < getCountOfStringsLikeThis(This_String, ANY_PREPROPERTY2); k++)
 						{
-							// выводим все пред-свойства
-							String PropertiesString = "Свойства фигуры \""+getStringLikeThis(getStringLikeThis(This_String, ANY_FIGURE), SOME_FIGURE)+"\": ";
-							for (int k = 0; k < getCountOfStringsLikeThis(This_String, ANY_PREPROPERTY2); k++)
-							{
-								// выводим имя, очищенное от символов
-								PropertiesString += getStringLikeThis(getStringLikeThis(This_String, ANY_PREPROPERTY2, k), SOME_PREPROPERTY)+" ";
-							}
-							ta.append(PropertiesString+"\n");
+							// находим имя, очищенное от символов
+							PropertyName = getStringLikeThis(getStringLikeThis(This_String, ANY_PREPROPERTY2, k), SOME_PREPROPERTY);
+							PropertiesString += PropertyName + " ";
+							// добавляем фигуре свойство
+							thisFigure.addProperty(getPropertyByName(PropertyName));
 						}
+						ta.append(PropertiesString+"\n");
 					}
+
+					// добавляем фигуру в список на отрисовку
+					fr.insertFigure(thisFigure);
 				}
 			}
 		}
@@ -513,7 +637,7 @@ class TextToGraphic
 			return st;
 	}
 
-	// вернуть строку, которая предшествует первому выражению, соответствующему шаблону
+	// вернуть строку, которая находится после первого выражения, соответствующему шаблону
 	private static String getEndStringLikeThis(String st, String mask)
 	{
 		int end = getEndPosStringLikeThis(st, mask, 0);
@@ -533,7 +657,7 @@ class TextToGraphic
 			return st;
 	}
 
-	// (синоним) вернуть строку, которая предшествует n-ному выражению, соответствующему шаблону
+	// (синоним) вернуть строку, которая находится после n-ного выражения, соответствующего шаблону
 	private static String getEndStringLikeThis(String st, String mask, int ordNumber)
 	{
 		int end = getEndPosStringLikeThis(st, mask, ordNumber);
@@ -558,19 +682,33 @@ class TextToGraphic
 			return 4;
 		else if (hasStringLikeThis(FigureName, TRIANGLE_NAME))
 			return 5;
-		Log("\""+FigureName+"\"");
 
 		return -1;
 	}
 
-	// определить свойство
-	private static int getProperty(String PropertyName)
+	// определить свойство по названию
+	private static Property getPropertyByName(String PropertyName)
 	{
-		return -1;
+		Property Proper;
+
+		if (hasStringLikeThis(PropertyName, BIG_NAME))
+		{
+			Proper = new Property(Property.PropertyType.PT_SIZE, 2);
+		}
+		else if (hasStringLikeThis(PropertyName, SMALL_NAME))
+		{
+			Proper = new Property(Property.PropertyType.PT_SIZE, 0);
+		}
+		else
+		{	// если свойство не найдено, создаём свойство-пустышку
+			Proper = new Property();
+		}
+
+		return Proper;
 	}
 }
 
-// обработка действий
+// обработчик событий
 class ActLis implements ActionListener, TextListener
 {
 	private TextField tf;
