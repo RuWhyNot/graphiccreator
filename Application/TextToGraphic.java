@@ -22,7 +22,10 @@ class Property
 		PT_SIZE, // 0 - маленький, 1 - средний, 2 - большой
 		PT_SYMMETRIC, // 0 - не симметричен, 1 - симетричен относительно прямой, 2 - симметричен относительно двух перпендикулярных прямых
 		PT_CLOSED, // 0 - разомкнут, 1 - замкнут
-		PT_NONE // пустое свойство (не обрабатывается)
+		PT_HASVERTS, // точное количество вершин
+		PT_MINVERTS, // имеет как минимум это количество вершин
+		PT_MAXVERTS, // имеет максимум это количество вершин
+		PT_NONE // пустое свойство (не обрабатывается, так же нужно для служебных целей)
 	};
 
 	// тип свойства
@@ -40,6 +43,21 @@ class Property
 	Property(PropertyType Type, int Value)
 	{
 		this.Type = Type;
+		this.Value = Value;
+	}
+
+	// инициализация c числовым значением типа свойства
+	Property(int Type)
+	{
+		PropertyType[] PType = PropertyType.values();
+		this.Type = PType[Type];
+	}
+
+	// инициализация c числовым значением типа свойства и со значением свойства
+	Property(int Type, int Value)
+	{
+		PropertyType[] PType = PropertyType.values();
+		this.Type = PType[Type];
 		this.Value = Value;
 	}
 
@@ -66,22 +84,15 @@ class Property
 	}
 }
 
-// фигура
-class Figure
+// виртуальный класс, родитель фигуры и протофигуры
+class VFigure
 {
 	// что за фигура
-	private int Class;
+	protected int Class;
 
 	// массив свойств
-	private Property[] Properties = new Property[10];
-	private int PropCount;
-
-	// инициализация
-	Figure(int Class)
-	{
-		this.Class = Class;
-		PropCount = 0;
-	}
+	protected Property[] Properties = new Property[10];
+	protected int PropCount;
 
 	// добавить новое свойство фигуры
 	public void addProperty(Property Prope)
@@ -89,23 +100,165 @@ class Figure
 		// если свойство и значение свойства заданы
 		if (Prope.type() != Property.PropertyType.PT_NONE && Prope.value() != -1)
 		{
+			boolean duplicateOrAbort = false;
+
 			// ищем, не было ли уже такого свойства
-			boolean duplicate = false;
 			for (int i = 0; i < PropCount; i++)
 			{
 				// если такое свойство есть
 				if (Properties[i].type() == Prope.type())
 				{
-					// если значения свойств разнятся, выводим ошибку
-					if (Properties[i].value() != Prope.value())
-						TextToGraphic.Log("Попытка задать конфликтующее свойство: "+Properties[i].type());
+					if (
+						Properties[i].type() == Property.PropertyType.PT_SYMMETRIC
+						&&
+						Properties[i].value() == 1
+						&&
+						Prope.value() > 0
+						)
+					{	// если фигура была симметрична относительно прямой
+						// добавляем симметричность относительно двух перепендикулярных прямых
+						Properties[i].setValue(2);
+					}
+					else if (
+							Properties[i].type() == Property.PropertyType.PT_MINVERTS
+							&&
+							Properties[i].value() < Prope.value()
+							)
+					{	// если минимальное количесво больше предыдущего минимального
+						Properties[i].setValue(Prope.value());
+					}
+					else if (
+							Properties[i].type() == Property.PropertyType.PT_MAXVERTS
+							&&
+							Properties[i].value() > Prope.value()
+							)
+					{	// если максимальное количесво меньше предыдущего максимального
+						Properties[i].setValue(Prope.value());
+					}
+					else
+					{	// если свойства нужно обработать как простые
+						// если значения свойств разнятся, выводим ошибку
+						if (Properties[i].value() != Prope.value())
+							TextToGraphic.Log("Попытка задать конфликтующее свойство: "+Prope.type());
+					}
 
-					duplicate = true;
+					duplicateOrAbort = true;
+				}
+			}
+
+			/* проверяем на возможность существования нового свойства,
+			 * ограничивающего количество вершин фигуры */
+			if (!duplicateOrAbort && (Prope.type() == Property.PropertyType.PT_MINVERTS || Prope.type() == Property.PropertyType.PT_MAXVERTS || Prope.type() == Property.PropertyType.PT_HASVERTS))
+			{
+				for (int i = 0; i < PropCount; i++)
+				{
+					if (Properties[i].type() == Property.PropertyType.PT_HASVERTS)
+					{	// если уже есть свойство, устонавливающее точное количество вершин
+						// то новые подобные свойства добавлять нельзя
+						duplicateOrAbort = true;
+						break;
+					}
+				}
+
+				if (!duplicateOrAbort)
+				{
+					if (Prope.type() == Property.PropertyType.PT_MINVERTS)
+					{ // если новое свойство устонавливает минимальное количество вершин
+						for (int i = 0; i < PropCount; i++)
+						{
+							// если есть обратное свойство
+							if (Properties[i].type() == Property.PropertyType.PT_MAXVERTS)
+							{
+								// ищем пересечение
+								if (Properties[i].value() == Prope.value())
+								{	// если при пересечение остаётся одно число
+									// заменяем предыдущее свойство на новое
+									Properties[i] = new Property(Property.PropertyType.PT_HASVERTS, Prope.value());
+									// говорим о том, что не надо вносить новое свойство
+									duplicateOrAbort = true;
+									break;
+								}
+								else if (Properties[i].value() < Prope.value())
+								{	// если при пересечении не остаётся значений
+									TextToGraphic.Log("Попытка задать конфликтующее свойство: "+Prope.type());
+									// говорим о том, что не надо проигнорировать данное свойство
+									duplicateOrAbort = true;
+									break;
+								}
+								// иначе свойство можно добавить
+							}
+						}
+					}
+					else if (Prope.type() == Property.PropertyType.PT_MAXVERTS)
+					{ // если новое свойство устонавливает максимальное количество вершин
+						for (int i = 0; i < PropCount; i++)
+						{
+							// если есть обратное свойство
+							if (Properties[i].type() == Property.PropertyType.PT_MINVERTS)
+							{
+								// ищем пересечение
+								if (Properties[i].value() == Prope.value())
+								{	// если при пересечение остаётся одно число
+									// заменяем предыдущее свойство на новое
+									Properties[i] = new Property(Property.PropertyType.PT_HASVERTS, Prope.value());
+									// говорим о том, что не надо вносить новое свойство
+									duplicateOrAbort = true;
+									break;
+								}
+								else if (Properties[i].value() > Prope.value())
+								{	// если при пересечении не остаётся значений
+									TextToGraphic.Log("Попытка задать конфликтующее свойство: "+Prope.type());
+									// говорим о том, что не надо проигнорировать данное свойство
+									duplicateOrAbort = true;
+									break;
+								}
+								// иначе свойство можно добавить
+							}
+						}
+					}
+					else // если новое свойство устонавливает точное количество вершин
+					{
+						int min = -1, max = 10000;
+
+						// ищем минимальное и максимальное количество вершин, если таковые заданы
+						for (int i = 0; i < PropCount; i++)
+						{
+							if (Properties[i].type() == Property.PropertyType.PT_MINVERTS)
+								min = Properties[i].value();
+							else if (Properties[i].type() == Property.PropertyType.PT_MAXVERTS)
+								max = Properties[i].value();
+						}
+
+						// если новое значение входит в допустимый диапазон
+						if (Prope.value() >= min && Prope.value() <= max)
+						{
+							// если был задан минимальный порог, находим и обнуляем его
+							if (min != -1)
+								for (int i = 0; i < PropCount; i++)
+								{
+									if (Properties[i].type() == Property.PropertyType.PT_MINVERTS)
+										Properties[i] = new Property(Property.PropertyType.PT_NONE);
+								}
+
+							// если был задан максимальный порог, находим и обнуляем его
+							if (min != 10000)
+								for (int i = 0; i < PropCount; i++)
+								{
+									if (Properties[i].type() == Property.PropertyType.PT_MINVERTS)
+										Properties[i] = new Property(Property.PropertyType.PT_NONE);
+								}
+							// пропускаем свойство дальше
+						}
+						else // если значение выходит из диапазона
+						{	// не пропускаем новое свойство
+							duplicateOrAbort = true;
+						}
+					}
 				}
 			}
 
 			// если всё в порядке
-			if (!duplicate)
+			if (!duplicateOrAbort)
 			{
 				// добавляем свойство фигуре
 				Properties[PropCount] = Prope;
@@ -128,6 +281,54 @@ class Figure
 	{
 		return Class;
 	}
+}
+
+// прототип фигуры (виртуальная фигура)
+class ProtoFigure extends VFigure
+{
+	// родитель
+	private int Parent;
+
+	// инициализация
+	ProtoFigure(int Class, int Parent)
+	{
+		this.Class = Class;
+		this.Parent = Parent;
+		PropCount = 0;
+	}
+
+	public int parent()
+	{
+		return Parent;
+	}
+	
+	void addPropertiesFromAnotherPF(ProtoFigure Proto)
+	{
+		for (int i = 0; i < Proto.propertyCount(); i++)
+		{
+			addProperty(Proto.getProperty(i));
+		}
+	}
+}
+
+// реальная фигура
+class Figure extends VFigure
+{
+	// инициализация
+	Figure(int Class)
+	{
+		this.Class = Class;
+		PropCount = 0;
+	}
+
+	// инициализация на основе прототипа
+	Figure(ProtoFigure Prototype)
+	{
+		this.Class = Prototype.fclass();
+		PropCount = 0;
+		for (int i = 0; i < Prototype.propertyCount(); i++)
+			addProperty(new Property(Prototype.getProperty(i).type(), Prototype.getProperty(i).value()));
+	}
 
 	public int size()
 	{
@@ -139,6 +340,80 @@ class Figure
 
 		// если не установлен размер, ставим "средний"
 		return 1;
+	}
+
+	// меняем класс фигуры на более узко-специализированный, если это возможно
+	public boolean refreshClass()
+	{
+		// для каждого прототипа фигуры
+		for (int i = 0; i < TextToGraphic.FCount; i++)
+		{
+			// если фигура является наследником данной фигуры
+			if (TextToGraphic.ProtoFigures[i].parent() == Class)
+			{
+				boolean hasErrors = false;
+
+				// ------------------------------------ToDo: тут надо посчитать вершины
+
+				// сопоставляем все свойства
+				for (int j = 0; j < TextToGraphic.ProtoFigures[i].propertyCount(); j++)
+				{
+					// если свойство не пустое и не относится к количеству вершин
+					if (TextToGraphic.ProtoFigures[i].Properties[j].type() != Property.PropertyType.PT_NONE && TextToGraphic.ProtoFigures[i].Properties[j].type() != Property.PropertyType.PT_HASVERTS && TextToGraphic.ProtoFigures[i].Properties[j].type() != Property.PropertyType.PT_MINVERTS && TextToGraphic.ProtoFigures[i].Properties[j].type() != Property.PropertyType.PT_MAXVERTS)
+					{
+						boolean propertyAccepted = false;
+
+						// ищем для этого совйства протофигуры соответствующее свойство фигуры
+						Property.PropertyType localType = TextToGraphic.ProtoFigures[i].Properties[j].type();
+						for (int k = 0; k < PropCount; k++)
+						{
+							// если нашли совподающее свойство
+							if (Properties[k].type() == localType)
+							{
+								// и значение совпадает
+								if (TextToGraphic.ProtoFigures[i].Properties[j].value() == Properties[k].value())
+								{
+									// говорим о том, что нашли свойство и выходим из цикла
+									propertyAccepted = true;
+									break;
+								}
+								else // если значения разнятся
+								{
+									// фигура не подходит
+									hasErrors = true;
+									break;
+								}
+							}
+						}
+
+						if (!propertyAccepted)
+						{	// если свойству не был найден аналог
+							// фигура нам не подходит
+							hasErrors = true;
+							break;
+						}
+
+						if (hasErrors)
+						{	// если свойству был найден противоречивый аналог
+							// эта фигура нам не подходит
+							break;
+						}
+					}
+				}
+
+				// если фигура нам подходит
+				if (!hasErrors)
+				{
+					// используем её класс и выходим
+					Class = TextToGraphic.ProtoFigures[i].fclass();
+
+					// --------------------------------------- ToDo: тут неплохо бы сделать рекурсию
+
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 }
 
@@ -187,7 +462,7 @@ class Window1 extends Frame
 	Label Label1;
 	TextArea Area;
 
-	// Инициализация
+	// инициализация
 	Window1(String s)
 	{
 		super(s);
@@ -272,22 +547,25 @@ class Window1 extends Frame
 		// рисуем выбранную фигуру
 		switch (figure)
 		{
-			case 0: // круг
+			case 0: // фигура
+			case 1: // овал
+				g.drawOval(xPos, yPos + Wid / 4, Wid, Wid / 2);
+				break;
+			case 2: // эллипс
+				g.drawOval(xPos, yPos + Wid / 4, Wid, Wid / 2);
+				break;
+			case 3: // круг
 				g.drawOval(xPos, yPos, Wid, Wid);
 				break;
-			case 1: // квадрат
-				g.drawRect(xPos, yPos, Wid, Wid);
-				break;
-			case 2: // прямоугольник
+			case 4: // полигон
+			case 5: // 4-угольние
+			case 6: // прямоугольник
 				g.drawRect(xPos, yPos + Wid / 4, Wid, Wid / 2);
 				break;
-			case 3: // овал
-				g.drawOval(xPos, yPos + Wid / 4, Wid, Wid / 2);
+			case 7: // квадрат
+				g.drawRect(xPos, yPos, Wid, Wid);
 				break;
-			case 4: // эллипс
-				g.drawOval(xPos, yPos + Wid / 4, Wid, Wid / 2);
-				break;
-			case 5: // треугольник
+			case 8: // треугольник
 				int[] arrX = {xPos, xPos + Wid, xPos + Wid / 2};
 				int[] arrY = {yPos + Wid - Wid / 4, yPos + Wid - Wid / 4, yPos + Wid / 2 - Wid / 4};
 				g.drawPolygon(arrX, arrY, 3);
@@ -301,18 +579,17 @@ class Window1 extends Frame
 // основной класс
 class TextToGraphic
 {
+	static String FNames[][];
+	static ProtoFigure ProtoFigures[];
+	static int FCount = 0;
+
 	// --------------- КОНСТАНТЫ ------------------
-	// комманды
-	final static String CMDDRAW_NAME = "рисовать|нарисовать|начертить|рисуем";
-
-	// отношения
-	final static String IS_NAME = "является|являющийся";
-
 	// ключевые свойства
 	// пред-свойства
 	final static String CLOSED_NAME = "замкнутая|замкнута|замкнутой";
 	final static String UNCLOSED_NAME = "разомкнута|разомкнутый|не замкнутая|не замкнута|не замкнутой|замкнутый|замкнут|замкнутую";
 	final static String SYMMETRIC_NAME = "симметричная|симметрична|симметричный|симметричную";
+	final static String UNSYMMETRIC_NAME = "неcимметричная|не симметрична|неcсимметричный|не симметричную";
 	// переходные
 	final static String HASPART_NAME = "содержащий|содержащая|содержащую";
 	final static String HAS_NAME = "имеющий|имеющая|имеющую";
@@ -321,65 +598,36 @@ class TextToGraphic
 	final static String BIG_NAME = "большой|большая";
 	final static String SMALL_NAME = "маленький|маленькая";
 
-	// простые названия фигур
-	final static String FIGURE_NAME = "фигура|фигуру";
-	final static String ELLIPSE_NAME = "эллипс|эллипса";
-	final static String OVAL_NAME = "овал";
-	final static String POLYGON_NAME = "полигон|многоугольник";
-	final static String POLYLINE_NAME = "полилиния|ломаная|полилинию|ломанную";
-	final static String CIRCLE_NAME = "круг|окружность";
-	final static String RECT_NAME = "прямоугольник";
-	final static String SQUARE_NAME = "квадрат";
-	final static String TRIANGLE_NAME = "треугольник";
-
-	// названия фигур в родительном падеже
-	final static String FIGURE_RNAME = "фигуру";
-	final static String ELLIPSE_RNAME = "эллипс";
-	final static String OVAL_RNAME = "овал";
-	final static String POLYGON_RNAME = "полигон|многоугольник";
-	final static String POLYLINE_RNAME = "полилинию|ломанную";
-	final static String CIRCLE_RNAME = "круг|окружность";
-	final static String RECT_RNAME = "прямоугольник";
-	final static String SQUARE_RNAME = "квадрат";
-	final static String TRIANGLE_RNAME = "треугольник";
-
-	// названия фигур в предложном падеже
-	final static String FIGURE_PNAME = "фигуре";
-	final static String ELLIPSE_PNAME = "эллипсе";
-	final static String OVAL_PNAME = "овале";
-	final static String POLYGON_PNAME = "полигоне|многоугольнике";
-	final static String POLYLINE_PNAME = "полилинии|ломанной";
-	final static String CIRCLE_PNAME = "круге|окружности";
-	final static String RECT_PNAME = "прямоугольнике";
-	final static String SQUARE_PNAME = "квадрате";
-	final static String TRIANGLE_PNAME = "треугольнике";
-
 	// ----- составные выражения
 	// какая-либо фигура
-	final static String SOME_FIGURE = FIGURE_NAME+"|"+ELLIPSE_NAME+"|"+POLYGON_NAME+"|"+POLYLINE_NAME+"|"+CIRCLE_NAME+"|"+RECT_NAME+"|"+SQUARE_NAME+"|"+TRIANGLE_NAME+"|"+OVAL_NAME;
+	static String SOME_FIGURE = ""; // именительный
+	static String SOME_PFIGURE = ""; // предложный
 
 	// какое-либо пред-свойство
-	final static String SOME_PREPROPERTY = CLOSED_NAME+"|"+UNCLOSED_NAME+"|"+SYMMETRIC_NAME+"|"+BIG_NAME+"|"+SMALL_NAME;
+	final static String SOME_PREPROPERTY = CLOSED_NAME+"|"+UNCLOSED_NAME+"|"+UNSYMMETRIC_NAME+"|"+SYMMETRIC_NAME+"|"+BIG_NAME+"|"+SMALL_NAME;
 
 	// ----- регулярные выражения
 	// словестный символ
 	final static String WORD_CHAR = "[а-яА-Яa-zA-Z_0-9]";
 
 	// имеет № углов
-	final static String HAS_NVERTS = "("+HAS_NAME+")([\\s]|\\.|$)";
+	final static String HAS_NVERTS = "("+HAS_NAME+")[\\s]+[0-9]+(угол|угла|углов|вершину|вершины|вершин)([\\s]|\\.|$)";
+
+	// фигура в фигуре
+	static String FIGURE_IN_FIGURE;
 
 	// предложение
 	final static String PROPOSITION = WORD_CHAR+"[^.]*(\\.|$)";
 
 	// любое упоминание геометрических примитивов
-	final static String ANY_FIGURE = "(^|[\\s])+("+SOME_FIGURE+")([\\s]|\\.|,|$)";
+	static String ANY_FIGURE;
 
 	// пред-свойство
 	final static String ANY_PREPROPERTY = "(^|[\\s])+("+SOME_PREPROPERTY+")([\\s]|\\.|,|$)+";
 	final static String ANY_PREPROPERTY2 = "(^|[\\s])*("+SOME_PREPROPERTY+")([\\s]|\\.|,|$)+";
 
 	// пред-свойства и название фигуры
-	final static String PROPERTY_FIGURE = "[\\s]*(("+SOME_PREPROPERTY+")[^.]*)+[\\s]+("+SOME_FIGURE+")([\\s]|\\.|,|$)";
+	static String PROPERTY_FIGURE;
 
 	// выполняется при запуске приложения
 	public static void main(String[] args) throws ClassNotFoundException
@@ -395,13 +643,13 @@ class TextToGraphic
 		f.setSize(1000, 500);
 		f.setVisible(true);
 	}
-	
+
 	// создаём стандартные записи в БД
 	public static void createNewDataBase() throws ClassNotFoundException
 	{
 		// подключаем драйвер для работы с SQLite
 		Class.forName("org.sqlite.JDBC");
-		
+
 		Connection connection = null;
 		try
 		{
@@ -409,9 +657,41 @@ class TextToGraphic
 			connection = DriverManager.getConnection("jdbc:sqlite:onto.db");
 			Statement statement = connection.createStatement();
 			statement.setQueryTimeout(30);
-			statement.executeUpdate("drop table if exists figures");
-			statement.executeUpdate("create table figures (id integer, iname string, rname string, dname string, vname string, tname string, pname string)");
-			statement.executeUpdate("insert into figures values(1, 'фигура', 'фигуры', 'фигуре', 'фигуру', 'фигурой', 'фигуре')");
+
+			// уничтожаем таблицу FIGURES, если такая есть
+			statement.executeUpdate("drop table if exists FIGURES");
+			// создаём таблицу
+			statement.executeUpdate("create table FIGURES (ID_FIG integer, PARENT integer, INAME string, RNAME string, DNAME string, VNAME string, TNAME string, PNAME string)");
+			// добавляем записи
+			statement.executeUpdate("insert into FIGURES values(0, -1, 'фигура', 'фигуры', 'фигуре', 'фигуру', 'фигурой', 'фигуре')");
+			statement.executeUpdate("insert into FIGURES values(1, 0,'овал', 'овала', 'овалу', 'овал', 'овалом', 'овале')");
+			statement.executeUpdate("insert into FIGURES values(2, 1,'эллипс', 'эллипса', 'эллипсу', 'эллипс', 'эллипсом', 'эллипсе')");
+			statement.executeUpdate("insert into FIGURES values(3, 2,'круг', 'круга', 'кругу', 'круг', 'кругом', 'круге')");
+			statement.executeUpdate("insert into FIGURES values(4, 0,'полигон', 'полигона', 'полигону', 'полигон', 'полигоном', 'полигоне')");
+			statement.executeUpdate("insert into FIGURES values(5, 4,'четырёхугольник', 'четырёхугольника', 'четырёхугольнику', 'четырёхугольник', 'четырёхугольником', 'четырёхугольнике')");
+			statement.executeUpdate("insert into FIGURES values(6, 5,'прямоугольник', 'прямоугольника', 'прямоугольнику', 'прямоугольник', 'прямоугольником', 'прямоугольнике')");
+			statement.executeUpdate("insert into FIGURES values(7, 6,'квадрат', 'квадрата', 'квадрату', 'квадрат', 'квадратом', 'квадрате')");
+			statement.executeUpdate("insert into FIGURES values(8, 4,'треугольник', 'треугольника', 'треугольнику', 'треугольник', 'треугольником', 'треугольнике')");
+			statement.executeUpdate("insert into FIGURES values(9, 4,'многоугольник', 'многоугольника', 'многоугольнику', 'многоугольник', 'многоугольником', 'многоугольнике')");
+
+			// уничтожаем таблицу PROPERTIES, если такая есть
+			statement.executeUpdate("drop table if exists PROPERTIES");
+			// создаём таблицу
+			statement.executeUpdate("create table PROPERTIES (ID_PROP integer, ID_FIG integer, PROPERTY integer, VALUE integer)");
+			// добавляем записи
+			statement.executeUpdate("insert into PROPERTIES values(0, 1, 2, 1)");
+			statement.executeUpdate("insert into PROPERTIES values(1, 1, 3, 0)");
+			statement.executeUpdate("insert into PROPERTIES values(2, 2, 1, 1)");
+			statement.executeUpdate("insert into PROPERTIES values(3, 3, 1, 2)");
+			statement.executeUpdate("insert into PROPERTIES values(4, 4, 2, 1)");
+			statement.executeUpdate("insert into PROPERTIES values(5, 4, 4, 3)");
+			statement.executeUpdate("insert into PROPERTIES values(6, 5, 3, 4)");
+			statement.executeUpdate("insert into PROPERTIES values(7, 6, 1, 1)");
+			statement.executeUpdate("insert into PROPERTIES values(8, 7, 1, 2)");
+			statement.executeUpdate("insert into PROPERTIES values(9, 8, 3, 3)");
+			statement.executeUpdate("insert into PROPERTIES values(10, 9, 4, 5)");
+			// тест
+			//statement.executeUpdate("insert into PROPERTIES values(11, 3, 0, 2)");
 		}
 		catch(SQLException e)
 		{
@@ -431,13 +711,13 @@ class TextToGraphic
 			}
 		}
 	}
-	
+
 	// считываем данные из БД
 	public static void readDataBase() throws ClassNotFoundException
 	{
 		// подключаем драйвер для работы с SQLite
 		Class.forName("org.sqlite.JDBC");
-		
+
 		Connection connection = null;
 		try
 		{
@@ -445,18 +725,62 @@ class TextToGraphic
 			connection = DriverManager.getConnection("jdbc:sqlite:onto.db");
 			Statement statement = connection.createStatement();
 			statement.setQueryTimeout(30);
-			
-			ResultSet rs = statement.executeQuery("select * from figures");
+
+			// узнаём количество фигур в БД
+			int count = 0;
+			ResultSet rs = statement.executeQuery("select count(*) as COUNT from FIGURES");
 			while(rs.next())
 			{
-				Log("Именительный: " + rs.getString("iname"));
-				Log("Родительный: " + rs.getString("rname"));
-				Log("Дательный: " + rs.getString("dname"));
-				Log("Винительный: " + rs.getString("vname"));
-				Log("Творительный: " + rs.getString("tname"));
-				Log("Предложный: " + rs.getString("pname"));
-				//Log("id = " + rs.getInt("id"));
+				count = rs.getInt("COUNT");
 			}
+
+			// выделяем память под фигуры
+			FNames = new String[count][6];
+			ProtoFigures = new ProtoFigure[count];
+
+			// забираем всю информацию о фигурах из таблицы FIGURES
+			int id;
+			rs = statement.executeQuery("select * from FIGURES");
+			while(rs.next())
+			{
+				id = rs.getInt("ID_FIG");
+				FNames[id][0] = rs.getString("INAME");
+				FNames[id][1] = rs.getString("RNAME");
+				FNames[id][2] = rs.getString("DNAME");
+				FNames[id][3] = rs.getString("VNAME");
+				FNames[id][4] = rs.getString("TNAME");
+				FNames[id][5] = rs.getString("PNAME");
+
+				SOME_FIGURE += (id > 0 ? "|" : "") + FNames[id][0];
+				SOME_PFIGURE += (id > 0 ? "|" : "") + FNames[id][5];
+				ProtoFigures[id] = new ProtoFigure(id, rs.getInt("PARENT"));
+
+				Log("Загружена фигура: " + FNames[id][0]);
+
+				FCount++;
+			}
+
+			// забираем все свойства фигур
+			rs = statement.executeQuery("select ID_FIG, PROPERTY, VALUE from PROPERTIES");
+			while(rs.next())
+			{
+				ProtoFigures[rs.getInt("ID_FIG")].addProperty(new Property(rs.getInt("PROPERTY"), rs.getInt("VALUE")));
+			}
+			
+			// добавляем для каждой протофигуры свойства всех её родителей
+			for (int i = 0; i < FCount; i++)
+			{
+				// если это не базовый класс
+				if (ProtoFigures[i].parent() != -1)
+				{	// добавляем свойства от прородителя
+					ProtoFigures[i].addPropertiesFromAnotherPF(ProtoFigures[ProtoFigures[i].parent()]);
+				}
+			}
+
+			// задаём регулярные выражения, зависящие от данных из БД
+			ANY_FIGURE = "(^|[\\s])+("+SOME_FIGURE+")([\\s]|\\.|,|$)";
+			FIGURE_IN_FIGURE = "("+SOME_FIGURE+")[\\s]+(в)[\\s]+("+SOME_PFIGURE+")([\\s]|\\.|$)";
+			PROPERTY_FIGURE = "[\\s]*(("+SOME_PREPROPERTY+")[^.]*)+[\\s]+("+SOME_FIGURE+")([\\s]|\\.|,|$)";
 		}
 		catch(SQLException e)
 		{
@@ -510,7 +834,7 @@ class TextToGraphic
 
 					// создаём фигуру и выводим её название
 					FigureName = getStringLikeThis(getStringLikeThis(Propn, ANY_FIGURE, j), SOME_FIGURE);
-					Figure thisFigure = new Figure(getFigureID(FigureName));;
+					Figure thisFigure = new Figure(ProtoFigures[getFigureID(FigureName)]);
 					ta.append("Обнаружена фигура: "+FigureName+"\n");
 
 					// если содержатся пред-свойства
@@ -529,6 +853,11 @@ class TextToGraphic
 						ta.append(PropertiesString+"\n");
 					}
 
+					// определяем класс нашей фигуры
+					if (thisFigure.refreshClass())
+					{	// если фигура изменила класс, то сообщаем об этом
+						ta.append("Под описание подходит: "+FNames[thisFigure.fclass()][0]+"\n");
+					}
 					// добавляем фигуру в список на отрисовку
 					fr.insertFigure(thisFigure);
 				}
@@ -553,14 +882,14 @@ class TextToGraphic
 	// вернуть количество выражений, соответствующих шаблону
 	private static int getCountOfStringsLikeThis(String st, String mask)
 	{
-		int col = 0;
+		int count = 0;
 		Pattern p = Pattern.compile(mask, Pattern.CASE_INSENSITIVE);
 		Matcher m = p.matcher(st.toLowerCase());
 		while (m.find())
 		{
-			col++;
+			count++;
 		}
-		return col;
+		return count;
 	}
 
 	// вернуть первое выражение, которое соответствует шаблону
@@ -578,15 +907,15 @@ class TextToGraphic
 	// (синоним) вернуть n-ное выражение (начиная с нуля), которое соответствует шаблону
 	private static String getStringLikeThis(String st, String mask, int ordNumber)
 	{
-		int col = 0;
+		int count = 0;
 		Pattern p = Pattern.compile(mask, Pattern.CASE_INSENSITIVE);
 		Matcher m = p.matcher(st.toLowerCase());
 		while (m.find())
 		{
-			if (col == ordNumber)
+			if (count == ordNumber)
 				return m.group();
 
-			col++;
+			count++;
 		}
 		return "";
 	}
@@ -594,17 +923,17 @@ class TextToGraphic
 	// узнать индекс символа начала вхождения n-ного выражения, соответствующего шаблону
 	private static int getStartPosStringLikeThis(String st, String mask, int ordNumber)
 	{
-		int col = 0;
+		int count = 0;
 		Pattern p = Pattern.compile(mask, Pattern.CASE_INSENSITIVE);
 		Matcher m = p.matcher(st.toLowerCase());
 		while (m.find())
 		{
-			if (col == ordNumber)
+			if (count == ordNumber)
 			{
 				return m.start();
 			}
 
-			col++;
+			count++;
 		}
 		return -1;
 	}
@@ -612,17 +941,17 @@ class TextToGraphic
 	// узнать индекс символа конца вхождения n-ного выражения, соответствующего шаблону
 	private static int getEndPosStringLikeThis(String st, String mask, int ordNumber)
 	{
-		int col = 0;
+		int count = 0;
 		Pattern p = Pattern.compile(mask, Pattern.CASE_INSENSITIVE);
 		Matcher m = p.matcher(st.toLowerCase());
 		while (m.find())
 		{
-			if (col == ordNumber)
+			if (count == ordNumber)
 			{
 				return m.end();
 			}
 
-			col++;
+			count++;
 		}
 		return -1;
 	}
@@ -670,19 +999,12 @@ class TextToGraphic
 	// определить ID фигуры
 	private static int getFigureID(String FigureName)
 	{
-		if (hasStringLikeThis(FigureName, CIRCLE_NAME))
-			return 0;
-		else if (hasStringLikeThis(FigureName, SQUARE_NAME))
-			return 1;
-		else if (hasStringLikeThis(FigureName, RECT_NAME))
-			return 2;
-		else if (hasStringLikeThis(FigureName, OVAL_NAME))
-			return 3;
-		else if (hasStringLikeThis(FigureName, ELLIPSE_NAME))
-			return 4;
-		else if (hasStringLikeThis(FigureName, TRIANGLE_NAME))
-			return 5;
-
+		for (int i  = 0; i < FCount; i++)
+		{
+			// ищем название фигуры в именительном или винитеьном падежах
+			if (hasStringLikeThis(FigureName, FNames[i][0]+"|"+FNames[i][3]))
+				return i;
+		}
 		return -1;
 	}
 
@@ -699,8 +1021,25 @@ class TextToGraphic
 		{
 			Proper = new Property(Property.PropertyType.PT_SIZE, 0);
 		}
+		else if (hasStringLikeThis(PropertyName, SYMMETRIC_NAME))
+		{
+			Proper = new Property(Property.PropertyType.PT_SYMMETRIC, 1);
+		}
+		else if (hasStringLikeThis(PropertyName, CLOSED_NAME))
+		{
+			Proper = new Property(Property.PropertyType.PT_CLOSED, 1);
+		}
+		else if (hasStringLikeThis(PropertyName, UNCLOSED_NAME))
+		{
+			Proper = new Property(Property.PropertyType.PT_CLOSED, 0);
+		}
+		else if (hasStringLikeThis(PropertyName, UNSYMMETRIC_NAME))
+		{
+			Proper = new Property(Property.PropertyType.PT_SYMMETRIC, 0);
+		}
 		else
-		{	// если свойство не найдено, создаём свойство-пустышку
+		{
+			// если свойство не найдено, создаём свойство-пустышку
 			Proper = new Property();
 		}
 
