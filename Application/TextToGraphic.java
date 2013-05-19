@@ -24,13 +24,16 @@ class Property
 	 *	3 // точное количество вершин
 	 *	4 // имеет как минимум это количество вершин
 	 *	5 // имеет максимум это количество вершин
-	 *	6 // пустое свойство (не обрабатывается, нужно для служебных целей)
+	 *	6 // пустое свойство (всегда должно остоваться последним)
 	 */
 
 	// тип свойства
 	private int Type;
 	// значение свойства
 	private int Value = -1;
+	
+	// последнее стандартное свойство (пустое)
+	final static public int EMPTY_PROPERTY = 6;
 
 	// инициализация c числовым значением типа свойства
 	Property(int Type)
@@ -48,7 +51,7 @@ class Property
 	// инициализация свойства-пустышки
 	Property()
 	{
-		Type = 6;
+		Type = EMPTY_PROPERTY;
 	}
 
 	public void setValue(int Value)
@@ -82,7 +85,7 @@ class VFigure
 	public void addProperty(Property Prope)
 	{
 		// если свойство и значение свойства заданы
-		if (Prope.type() != 6 && Prope.value() != -1)
+		if (Prope.type() != Property.EMPTY_PROPERTY && Prope.value() != -1)
 		{
 			boolean duplicateOrAbort = false;
 
@@ -214,7 +217,7 @@ class VFigure
 								for (int i = 0; i < PropCount; i++)
 								{
 									if (Properties[i].type() == 4)
-										Properties[i] = new Property(6);
+										Properties[i] = new Property();
 								}
 
 							// если был задан максимальный порог, находим и обнуляем его
@@ -222,7 +225,7 @@ class VFigure
 								for (int i = 0; i < PropCount; i++)
 								{
 									if (Properties[i].type() == 4)
-										Properties[i] = new Property(6);
+										Properties[i] = new Property();
 								}
 							// пропускаем свойство дальше
 						}
@@ -279,6 +282,7 @@ class ProtoFigure extends VFigure
 		return Parent;
 	}
 
+	// добавляем все свойства другого прототипа
 	void addPropertiesFromAnotherPF(ProtoFigure Proto)
 	{
 		for (int i = 0; i < Proto.propertyCount(); i++)
@@ -389,18 +393,22 @@ class Figure extends VFigure
 					// сопоставляем все свойства
 					for (int j = 0; j < TextToGraphic.ProtoFigures[i].propertyCount(); j++)
 					{
+						TextToGraphic.Log(TextToGraphic.ProtoFigures[i].Properties[j].type()+" 0"+TextToGraphic.ProtoFigures[i].propertyCount());
 						// если свойство не пустое и не относится к количеству вершин
-						if (TextToGraphic.ProtoFigures[i].Properties[j].type() != 6 && TextToGraphic.ProtoFigures[i].Properties[j].type() != 3 && TextToGraphic.ProtoFigures[i].Properties[j].type() != 4 && TextToGraphic.ProtoFigures[i].Properties[j].type() != 5)
+						if (TextToGraphic.ProtoFigures[i].Properties[j].type() != Property.EMPTY_PROPERTY && (TextToGraphic.ProtoFigures[i].Properties[j].type() < 3 || TextToGraphic.ProtoFigures[i].Properties[j].type() > 5))
 						{
 							boolean propertyAccepted = false;
+							TextToGraphic.Log(TextToGraphic.ProtoFigures[i].Properties[j].type()+" 1");
 
 							// ищем для этого совйства протофигуры соответствующее свойство фигуры
 							int localType = TextToGraphic.ProtoFigures[i].Properties[j].type();
 							for (int k = 0; k < PropCount; k++)
 							{
+								TextToGraphic.Log(TextToGraphic.ProtoFigures[i].Properties[j].type()+" 2");
 								// если нашли совподающее свойство
 								if (Properties[k].type() == localType)
 								{
+									TextToGraphic.Log(TextToGraphic.ProtoFigures[i].Properties[j].type()+" 3");
 									// если свойство относится к симметричности
 									if (localType == 1)
 									{
@@ -631,7 +639,7 @@ class TextToGraphic
 	static int FCount = 0;
 	static int PCount = 0;
 
-	// --------------- КОНСТАНТЫ ------------------
+	// --------------- КОНСТАНТЫ (либо выражения, которые задаются один раз, при старте программы) ------------------
 
 	// ----- составные выражения
 	// какая-либо фигура
@@ -711,6 +719,7 @@ class TextToGraphic
 			statement.executeUpdate("insert into FIGURES values(7, 6,'квадрат', 'квадрата', 'квадрату', 'квадрат', 'квадратом', 'квадрате')");
 			statement.executeUpdate("insert into FIGURES values(8, 4,'треугольник', 'треугольника', 'треугольнику', 'треугольник', 'треугольником', 'треугольнике')");
 			statement.executeUpdate("insert into FIGURES values(9, 4,'многоугольник', 'многоугольника', 'многоугольнику', 'многоугольник', 'многоугольником', 'многоугольнике')");
+			// тест пользовательских свойств
 			statement.executeUpdate("insert into FIGURES values(10, 4,'звезда', 'звезды', 'звезде', 'звезда', 'звездой', 'звезде')");
 
 			// уничтожаем таблицу PROPERTIES, если такая есть
@@ -729,7 +738,8 @@ class TextToGraphic
 			statement.executeUpdate("insert into PROPERTIES values(8, 7, 1, 2)");
 			statement.executeUpdate("insert into PROPERTIES values(9, 8, 3, 3)");
 			statement.executeUpdate("insert into PROPERTIES values(10, 9, 4, 5)");
-			statement.executeUpdate("insert into PROPERTIES values(11, 10, 20, 1)");
+			// тест пользовательских свойств
+			statement.executeUpdate("insert into PROPERTIES values(11, 10, 20, 0)");
 
 
 			// уничтожаем таблицу PROPNAMES, если такая есть
@@ -743,6 +753,7 @@ class TextToGraphic
 			statement.executeUpdate("insert into PROPNAMES values(3, 'имеющий|имеющая|имеющую!угол|угла|углов|вершину|вершины|вершин')");
 			statement.executeUpdate("insert into PROPNAMES values(4, 'имеющий как минимум|имеющая как минимум|имеющую как минимум')");
 			statement.executeUpdate("insert into PROPNAMES values(5, 'имеющий максимум|имеющая максимум|имеющую максимум')");
+			// тест пользовательских свойств
 			statement.executeUpdate("insert into PROPNAMES values(20, 'звезданутый')");
 		}
 		catch(SQLException e)
@@ -815,8 +826,8 @@ class TextToGraphic
 			while(rs.next())
 			{
 				count = rs.getInt("MAX") + 1;
-				if (count > 6)
-					count += 6 - 19;
+				if (count > Property.EMPTY_PROPERTY)
+					count += Property.EMPTY_PROPERTY - 19;
 			}
 			PCount = count;
 
@@ -831,8 +842,8 @@ class TextToGraphic
 				// достаём ID
 				id = rs.getInt("PROPERTY");
 				// нормализуем ID
-				if (id > 6)
-					id += 6 - 19;
+				if (id > Property.EMPTY_PROPERTY)
+					id += Property.EMPTY_PROPERTY - 19;
 
 				NextString = rs.getString("NAME");
 				int i = 0;
@@ -854,7 +865,10 @@ class TextToGraphic
 			int property;
 			while(rs.next())
 			{
-				ProtoFigures[rs.getInt("ID_FIG")].addProperty(new Property(rs.getInt("PROPERTY"), rs.getInt("VALUE")));
+				property = rs.getInt("PROPERTY");
+				if (property > Property.EMPTY_PROPERTY)
+					property += Property.EMPTY_PROPERTY - 19;
+				ProtoFigures[rs.getInt("ID_FIG")].addProperty(new Property(property, rs.getInt("VALUE")));
 			}
 
 			// добавляем для каждой протофигуры свойства всех её родителей
