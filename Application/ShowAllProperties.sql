@@ -1,0 +1,1 @@
+select ASd.INAME as NAME, PNames.NAME as PROPERTY, ProP.VALUE as VALUE  from figures as ASd, properties as ProP, propnames as PNames where ASd.ID_FIG = ProP.ID_FIG and ProP.PROPERTY = PNames.PROPERTY
