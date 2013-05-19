@@ -17,55 +17,38 @@ import java.util.regex.Pattern;
 // свойство
 class Property
 {
-	public enum PropertyType
-	{
-		PT_SIZE, // 0 - маленький, 1 - средний, 2 - большой
-		PT_SYMMETRIC, // 0 - не симметричен, 1 - симетричен относительно прямой, 2 - симметричен относительно двух перпендикулярных прямых
-		PT_CLOSED, // 0 - разомкнут, 1 - замкнут
-		PT_HASVERTS, // точное количество вершин
-		PT_MINVERTS, // имеет как минимум это количество вершин
-		PT_MAXVERTS, // имеет максимум это количество вершин
-		PT_CUSTOMPROPERTY, // пользовательское свойство
-		PT_NONE // пустое свойство (не обрабатывается, нужно для служебных целей)
-	};
+	/* Type
+	 *	0 // 0 - маленький, 1 - средний, 2 - большой
+	 *	1 // 0 - не симметричен, 1 - симетричен относительно прямой, 2 - симметричен относительно двух перпендикулярных прямых
+	 *	2 // 0 - разомкнут, 1 - замкнут
+	 *	3 // точное количество вершин
+	 *	4 // имеет как минимум это количество вершин
+	 *	5 // имеет максимум это количество вершин
+	 *	6 // пустое свойство (не обрабатывается, нужно для служебных целей)
+	 */
 
 	// тип свойства
-	private PropertyType Type;
+	private int Type;
 	// значение свойства
 	private int Value = -1;
-
-	// инициализация
-	Property(PropertyType Type)
-	{
-		this.Type = Type;
-	}
-
-	// инициализация со значением
-	Property(PropertyType Type, int Value)
-	{
-		this.Type = Type;
-		this.Value = Value;
-	}
 
 	// инициализация c числовым значением типа свойства
 	Property(int Type)
 	{
-		PropertyType[] PType = PropertyType.values();
-		this.Type = PType[Type];
+		this.Type = Type;
 	}
 
 	// инициализация c числовым значением типа свойства и со значением свойства
 	Property(int Type, int Value)
 	{
-		PropertyType[] PType = PropertyType.values();
-		this.Type = PType[Type];
+		this.Type = Type;
 		this.Value = Value;
 	}
 
 	// инициализация свойства-пустышки
 	Property()
 	{
-		Type = PropertyType.PT_NONE;
+		Type = 6;
 	}
 
 	public void setValue(int Value)
@@ -74,7 +57,7 @@ class Property
 	}
 
 	// получить тип свойства
-	public PropertyType type()
+	public int type()
 	{
 		return Type;
 	}
@@ -99,7 +82,7 @@ class VFigure
 	public void addProperty(Property Prope)
 	{
 		// если свойство и значение свойства заданы
-		if (Prope.type() != Property.PropertyType.PT_NONE && Prope.value() != -1)
+		if (Prope.type() != 6 && Prope.value() != -1)
 		{
 			boolean duplicateOrAbort = false;
 
@@ -110,7 +93,7 @@ class VFigure
 				if (Properties[i].type() == Prope.type())
 				{
 					if (
-						Properties[i].type() == Property.PropertyType.PT_SYMMETRIC
+						Properties[i].type() == 1
 						&&
 						Properties[i].value() == 1
 						&&
@@ -121,7 +104,7 @@ class VFigure
 						Properties[i].setValue(2);
 					}
 					else if (
-							Properties[i].type() == Property.PropertyType.PT_MINVERTS
+							Properties[i].type() == 4
 							&&
 							Properties[i].value() < Prope.value()
 							)
@@ -129,7 +112,7 @@ class VFigure
 						Properties[i].setValue(Prope.value());
 					}
 					else if (
-							Properties[i].type() == Property.PropertyType.PT_MAXVERTS
+							Properties[i].type() == 5
 							&&
 							Properties[i].value() > Prope.value()
 							)
@@ -144,11 +127,11 @@ class VFigure
 
 			/* проверяем на возможность существования нового свойства,
 			 * ограничивающего количество вершин фигуры */
-			if (!duplicateOrAbort && (Prope.type() == Property.PropertyType.PT_MINVERTS || Prope.type() == Property.PropertyType.PT_MAXVERTS || Prope.type() == Property.PropertyType.PT_HASVERTS))
+			if (!duplicateOrAbort && (Prope.type() == 4 || Prope.type() == 5 || Prope.type() == 3))
 			{
 				for (int i = 0; i < PropCount; i++)
 				{
-					if (Properties[i].type() == Property.PropertyType.PT_HASVERTS)
+					if (Properties[i].type() == 3)
 					{	// если уже есть свойство, устанавливающее точное количество вершин,
 						// то новые подобные свойства добавлять нельзя
 						duplicateOrAbort = true;
@@ -158,18 +141,18 @@ class VFigure
 
 				if (!duplicateOrAbort)
 				{
-					if (Prope.type() == Property.PropertyType.PT_MINVERTS)
+					if (Prope.type() == 4)
 					{ // если новое свойство устанавливает минимальное количество вершин
 						for (int i = 0; i < PropCount; i++)
 						{
 							// если есть обратное свойство
-							if (Properties[i].type() == Property.PropertyType.PT_MAXVERTS)
+							if (Properties[i].type() == 5)
 							{
 								// ищем пересечение
 								if (Properties[i].value() == Prope.value())
 								{	// если при пересечение остаётся одно число
 									// заменяем предыдущее свойство на новое
-									Properties[i] = new Property(Property.PropertyType.PT_HASVERTS, Prope.value());
+									Properties[i] = new Property(3, Prope.value());
 									// говорим о том, что не надо вносить новое свойство
 									duplicateOrAbort = true;
 									break;
@@ -184,18 +167,18 @@ class VFigure
 							}
 						}
 					}
-					else if (Prope.type() == Property.PropertyType.PT_MAXVERTS)
+					else if (Prope.type() == 5)
 					{ // если новое свойство устанавливает максимальное количество вершин
 						for (int i = 0; i < PropCount; i++)
 						{
 							// если есть обратное свойство
-							if (Properties[i].type() == Property.PropertyType.PT_MINVERTS)
+							if (Properties[i].type() == 4)
 							{
 								// ищем пересечение
 								if (Properties[i].value() == Prope.value())
 								{	// если при пересечение остаётся одно число
 									// заменяем предыдущее свойство на новое
-									Properties[i] = new Property(Property.PropertyType.PT_HASVERTS, Prope.value());
+									Properties[i] = new Property(3, Prope.value());
 									// говорим о том, что не надо вносить новое свойство
 									duplicateOrAbort = true;
 									break;
@@ -217,9 +200,9 @@ class VFigure
 						// ищем минимальное и максимальное количество вершин, если таковые заданы
 						for (int i = 0; i < PropCount; i++)
 						{
-							if (Properties[i].type() == Property.PropertyType.PT_MINVERTS)
+							if (Properties[i].type() == 4)
 								min = Properties[i].value();
-							else if (Properties[i].type() == Property.PropertyType.PT_MAXVERTS)
+							else if (Properties[i].type() == 5)
 								max = Properties[i].value();
 						}
 
@@ -230,16 +213,16 @@ class VFigure
 							if (min != -1)
 								for (int i = 0; i < PropCount; i++)
 								{
-									if (Properties[i].type() == Property.PropertyType.PT_MINVERTS)
-										Properties[i] = new Property(Property.PropertyType.PT_NONE);
+									if (Properties[i].type() == 4)
+										Properties[i] = new Property(6);
 								}
 
 							// если был задан максимальный порог, находим и обнуляем его
 							if (min != 10000)
 								for (int i = 0; i < PropCount; i++)
 								{
-									if (Properties[i].type() == Property.PropertyType.PT_MINVERTS)
-										Properties[i] = new Property(Property.PropertyType.PT_NONE);
+									if (Properties[i].type() == 4)
+										Properties[i] = new Property(6);
 								}
 							// пропускаем свойство дальше
 						}
@@ -328,7 +311,7 @@ class Figure extends VFigure
 	{
 		for (int i = 0; i < PropCount; i++)
 		{
-			if (Properties[i].type() == Property.PropertyType.PT_SIZE)
+			if (Properties[i].type() == 0)
 				return Properties[i].value();
 		}
 
@@ -351,7 +334,7 @@ class Figure extends VFigure
 				int MinVertsPF = -1, MaxVertsPF = 10000;
 				for (int j = 0; j < TextToGraphic.ProtoFigures[i].propertyCount(); j++)
 				{
-					if (TextToGraphic.ProtoFigures[i].Properties[j].type() == Property.PropertyType.PT_HASVERTS)
+					if (TextToGraphic.ProtoFigures[i].Properties[j].type() == 3)
 					{	// если устанавливается точное количество вершин
 						// устанавливаем максимальное и минимальное количество вершин
 						MinVertsPF = TextToGraphic.ProtoFigures[i].Properties[j].value();
@@ -359,12 +342,12 @@ class Figure extends VFigure
 						// дальше нет смысла что-то искать
 						break;
 					}
-					else if (TextToGraphic.ProtoFigures[i].Properties[j].type() == Property.PropertyType.PT_MINVERTS)
+					else if (TextToGraphic.ProtoFigures[i].Properties[j].type() == 4)
 					{
 						// устанавливаем минимальное количество вершин
 						MinVertsPF = TextToGraphic.ProtoFigures[i].Properties[j].value();
 					}
-					else if (TextToGraphic.ProtoFigures[i].Properties[j].type() == Property.PropertyType.PT_MAXVERTS)
+					else if (TextToGraphic.ProtoFigures[i].Properties[j].type() == 5)
 					{
 						// устанавливаем максимальное количество вершин
 						MaxVertsPF = TextToGraphic.ProtoFigures[i].Properties[j].value();
@@ -375,19 +358,19 @@ class Figure extends VFigure
 				int MinVertsOF = -1, MaxVertsOF = 10000;
 				for (int j = 0; j < PropCount; j++)
 				{
-					if (Properties[j].type() == Property.PropertyType.PT_HASVERTS)
+					if (Properties[j].type() == 3)
 					{	// если устанавливается точное количество вершин
 						MinVertsOF = Properties[j].value();
 						MaxVertsOF = MinVertsOF;
 						// дальше нет смысла что-то искать
 						break;
 					}
-					else if (Properties[j].type() == Property.PropertyType.PT_MINVERTS)
+					else if (Properties[j].type() == 4)
 					{
 						// устанавливаем максимальное количество вершин
 						MinVertsOF = Properties[j].value();
 					}
-					else if (Properties[j].type() == Property.PropertyType.PT_MAXVERTS)
+					else if (Properties[j].type() == 5)
 					{
 						// устанавливаем минимальное количество вершин
 						MaxVertsOF = Properties[j].value();
@@ -407,19 +390,19 @@ class Figure extends VFigure
 					for (int j = 0; j < TextToGraphic.ProtoFigures[i].propertyCount(); j++)
 					{
 						// если свойство не пустое и не относится к количеству вершин
-						if (TextToGraphic.ProtoFigures[i].Properties[j].type() != Property.PropertyType.PT_NONE && TextToGraphic.ProtoFigures[i].Properties[j].type() != Property.PropertyType.PT_HASVERTS && TextToGraphic.ProtoFigures[i].Properties[j].type() != Property.PropertyType.PT_MINVERTS && TextToGraphic.ProtoFigures[i].Properties[j].type() != Property.PropertyType.PT_MAXVERTS)
+						if (TextToGraphic.ProtoFigures[i].Properties[j].type() != 6 && TextToGraphic.ProtoFigures[i].Properties[j].type() != 3 && TextToGraphic.ProtoFigures[i].Properties[j].type() != 4 && TextToGraphic.ProtoFigures[i].Properties[j].type() != 5)
 						{
 							boolean propertyAccepted = false;
 
 							// ищем для этого совйства протофигуры соответствующее свойство фигуры
-							Property.PropertyType localType = TextToGraphic.ProtoFigures[i].Properties[j].type();
+							int localType = TextToGraphic.ProtoFigures[i].Properties[j].type();
 							for (int k = 0; k < PropCount; k++)
 							{
 								// если нашли совподающее свойство
 								if (Properties[k].type() == localType)
 								{
 									// если свойство относится к симметричности
-									if (localType == Property.PropertyType.PT_SYMMETRIC)
+									if (localType == 1)
 									{
 										if (TextToGraphic.ProtoFigures[i].Properties[j].value() == Properties[k].value() || (TextToGraphic.ProtoFigures[i].Properties[j].value() == 1 && Properties[k].value() == 2))
 										{	// если симметричность не противоречива
@@ -746,7 +729,7 @@ class TextToGraphic
 			statement.executeUpdate("insert into PROPERTIES values(8, 7, 1, 2)");
 			statement.executeUpdate("insert into PROPERTIES values(9, 8, 3, 3)");
 			statement.executeUpdate("insert into PROPERTIES values(10, 9, 4, 5)");
-			//statement.executeUpdate("insert into PROPERTIES values(11, 10, 20, 1)");
+			statement.executeUpdate("insert into PROPERTIES values(11, 10, 20, 1)");
 
 
 			// уничтожаем таблицу PROPNAMES, если такая есть
@@ -832,8 +815,8 @@ class TextToGraphic
 			while(rs.next())
 			{
 				count = rs.getInt("MAX") + 1;
-				if (count > Property.PropertyType.PT_NONE.ordinal())
-					count += Property.PropertyType.PT_NONE.ordinal() - 19;
+				if (count > 6)
+					count += 6 - 19;
 			}
 			PCount = count;
 
@@ -848,8 +831,8 @@ class TextToGraphic
 				// достаём ID
 				id = rs.getInt("PROPERTY");
 				// нормализуем ID
-				if (id > Property.PropertyType.PT_NONE.ordinal())
-					id += Property.PropertyType.PT_NONE.ordinal() - 19;
+				if (id > 6)
+					id += 6 - 19;
 
 				NextString = rs.getString("NAME");
 				int i = 0;
@@ -971,8 +954,11 @@ class TextToGraphic
 					// если содержится информация о количестве вершин
 					if (hasStringLikeThis(Next_String, HAS_NVERTS))
 					{
-						thisFigure.addProperty(new Property(Property.PropertyType.PT_HASVERTS, Integer.parseInt(getStringLikeThis(getStringLikeThis(Next_String, HAS_NVERTS), NUMBER_ST))));
+						thisFigure.addProperty(new Property(3, Integer.parseInt(getStringLikeThis(getStringLikeThis(Next_String, HAS_NVERTS), NUMBER_ST))));
 					}
+					
+					for(int k = 0; k < thisFigure.propertyCount(); k++)
+						ta.append("Свойство: "+thisFigure.getProperty(k).type()+"\n");
 
 					// определяем класс нашей фигуры
 					if (thisFigure.refreshClass())
