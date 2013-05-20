@@ -8,6 +8,8 @@ import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.swing.JOptionPane;
+
 /*
  *	В коде использована прямая конкатенация строк, что является неоптимальным решением.
  *	Если, в будущем, приложение планируется использовать для обработки больших текстов,
@@ -393,22 +395,18 @@ class Figure extends VFigure
 					// сопоставляем все свойства
 					for (int j = 0; j < TextToGraphic.ProtoFigures[i].propertyCount(); j++)
 					{
-						TextToGraphic.Log(TextToGraphic.ProtoFigures[i].Properties[j].type()+" 0"+TextToGraphic.ProtoFigures[i].propertyCount());
 						// если свойство не пустое и не относится к количеству вершин
 						if (TextToGraphic.ProtoFigures[i].Properties[j].type() != Property.EMPTY_PROPERTY && (TextToGraphic.ProtoFigures[i].Properties[j].type() < 3 || TextToGraphic.ProtoFigures[i].Properties[j].type() > 5))
 						{
 							boolean propertyAccepted = false;
-							TextToGraphic.Log(TextToGraphic.ProtoFigures[i].Properties[j].type()+" 1");
 
 							// ищем для этого совйства протофигуры соответствующее свойство фигуры
 							int localType = TextToGraphic.ProtoFigures[i].Properties[j].type();
 							for (int k = 0; k < PropCount; k++)
 							{
-								TextToGraphic.Log(TextToGraphic.ProtoFigures[i].Properties[j].type()+" 2");
 								// если нашли совподающее свойство
 								if (Properties[k].type() == localType)
 								{
-									TextToGraphic.Log(TextToGraphic.ProtoFigures[i].Properties[j].type()+" 3");
 									// если свойство относится к симметричности
 									if (localType == 1)
 									{
@@ -601,6 +599,7 @@ class Window1 extends Frame
 		switch (figure)
 		{
 			case 0: // фигура
+				break;
 			case 1: // овал
 				g.drawOval(xPos, yPos + Wid / 4, Wid, Wid / 2);
 				break;
@@ -611,7 +610,9 @@ class Window1 extends Frame
 				g.drawOval(xPos, yPos, Wid, Wid);
 				break;
 			case 4: // полигон
-			case 5: // 4-угольние
+				break;
+			case 5: // 4-угольник
+				break;
 			case 6: // прямоугольник
 				g.drawRect(xPos, yPos + Wid / 4, Wid, Wid / 2);
 				break;
@@ -622,6 +623,8 @@ class Window1 extends Frame
 				int[] arrX = {xPos, xPos + Wid, xPos + Wid / 2};
 				int[] arrY = {yPos + Wid - Wid / 4, yPos + Wid - Wid / 4, yPos + Wid / 2 - Wid / 4};
 				g.drawPolygon(arrX, arrY, 3);
+				break;
+			case 9: // многоугольник
 				break;
 			default:
 				break;
@@ -678,21 +681,60 @@ class TextToGraphic
 	// выполняется при запуске приложения
 	public static void main(String[] args) throws ClassNotFoundException
 	{
+		int error = 0;
 		Log("Работаем с базой данных");
 
-		createNewDataBase();
-		readDataBase();
+		// пытаемся считать информацию из БД
+		if (!readDataBase())
+		{
+			error = 1;
+			TextToGraphic.Log("Не удалось считать информацию из базы данных. Попытка восстановить стандартную базу..");
+			// не вышло, пытаемся восстановить стандатрную базу
+			if (createNewDataBase())
+			{
+				// если вышло создать, пробуем подключиться снова
+				if (!readDataBase())
+				{
+					// восстановленная БД не соответствует необходимой структуре
+					// пишем в консоль об ошибке
+					TextToGraphic.Log("Не удалось подключиться к БД. Приложение будет закрыто.");
+					error = 2;
+				}
+				else
+				{
+					TextToGraphic.Log("Успешно!");
+					// нам удалось восстановить БД и считать из него информацию
+					error = 0;
+				}
+			}
+			else
+			{
+				error = 1;
+				TextToGraphic.Log("Не удалось восстановить БД. Удалите файл базы данных и перезапустите приложение.");
+			}
+		}
 
-		Log("Открытие окна");
-		// создаём новое окно и указываем заголовок
-		Window1 f = new Window1("Чертить");
-		f.setSize(1000, 500);
-		f.setVisible(true);
+		if (error == 0)
+		{
+			Log("Открытие окна");
+			// создаём новое окно и указываем заголовок
+			Window1 f = new Window1("Чертить");
+			f.setSize(1000, 500);
+			f.setVisible(true);
+		}
+		else
+		{
+			Window1 f = new Window1("Чертить");
+			JOptionPane.showMessageDialog(null, "Приложение завершилось с ошибкой.\nПросмотрите LaunchLog.txt для получения подробной информации.", "Ошибка", JOptionPane.ERROR_MESSAGE);
+			System.exit(0);
+		}
 	}
 
 	// создаём стандартные записи в БД
-	public static void createNewDataBase() throws ClassNotFoundException
+	public static boolean createNewDataBase() throws ClassNotFoundException
 	{
+		int error = 0;
+
 		// подключаем драйвер для работы с SQLite
 		Class.forName("org.sqlite.JDBC");
 
@@ -753,31 +795,42 @@ class TextToGraphic
 			statement.executeUpdate("insert into PROPNAMES values(3, 'имеющий|имеющая|имеющую!угол|угла|углов|вершину|вершины|вершин')");
 			statement.executeUpdate("insert into PROPNAMES values(4, 'имеющий как минимум|имеющая как минимум|имеющую как минимум')");
 			statement.executeUpdate("insert into PROPNAMES values(5, 'имеющий максимум|имеющая максимум|имеющую максимум')");
-			// тест пользовательских свойств
+			
 			statement.executeUpdate("insert into PROPNAMES values(20, 'звезданутый')");
 		}
 		catch(SQLException e)
 		{
+			error = 1;
+			// не удалось записать информацию в БД
 			System.err.println(e.getMessage());
 		}
 		finally
 		{
 			try
 			{
-				if(connection != null)
-				connection.close();
+				if (connection != null)
+					connection.close();
 			}
 			catch(SQLException e)
 			{
 				// если не удалось закрыть подключение к БД
 				System.err.println(e);
 			}
+			finally
+			{
+				if (error != 0)
+					return false;
+				else
+					return true;
+			}
 		}
 	}
 
 	// считываем данные из БД
-	public static void readDataBase() throws ClassNotFoundException
+	public static boolean readDataBase() throws ClassNotFoundException
 	{
+		int error = 0;
+		
 		// подключаем драйвер для работы с SQLite
 		Class.forName("org.sqlite.JDBC");
 
@@ -891,19 +944,28 @@ class TextToGraphic
 		}
 		catch(SQLException e)
 		{
-			System.err.println(e.getMessage());
+			error = 1;
+			// не удалось считать информацию из БД
+			//System.err.println(e.getMessage());
 		}
 		finally
 		{
 			try
 			{
-				if(connection != null)
-				connection.close();
+				if (connection != null)
+					connection.close();
 			}
 			catch(SQLException e)
 			{
 				// если не удалось закрыть подключение к БД
 				System.err.println(e);
+			}
+			finally
+			{
+				if (error != 0)
+					return false;
+				else
+					return true;
 			}
 		}
 	}
