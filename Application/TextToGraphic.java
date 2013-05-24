@@ -33,7 +33,7 @@ class Property
 	private int Type;
 	// значение свойства
 	private int Value = -1;
-	
+
 	// последнее стандартное свойство (пустое)
 	final static public int EMPTY_PROPERTY = 6;
 
@@ -304,6 +304,15 @@ class Figure extends VFigure
 		PropCount = 0;
 	}
 
+	// инициализация другой фигурой
+	Figure(Figure fig)
+	{
+		Class = fig.Class;
+		PropCount = 0;
+		for (int i = 0; i < fig.propertyCount(); i++)
+			addProperty(new Property(fig.getProperty(i).type(), fig.getProperty(i).value()));
+	}
+
 	// инициализация на основе прототипа
 	Figure(ProtoFigure Prototype)
 	{
@@ -466,39 +475,207 @@ class Figure extends VFigure
 		}
 		return false;
 	}
+
+	// отрисовываем данную фигуру
+	public void draw(Graphics g, int xPos, int yPos, int Wid)
+	{
+		// рисуем выбранную фигуру
+		switch (Class)
+		{
+			case 0: // фигура
+				break;
+			case 1: // овал
+				g.drawOval(xPos - Wid/2, yPos - Wid/2 + Wid / 4, Wid, Wid / 2);
+				break;
+			case 2: // эллипс
+				g.drawOval(xPos - Wid/2, yPos - Wid/2 + Wid / 4, Wid, Wid / 2);
+				break;
+			case 3: // круг
+				g.drawOval(xPos - Wid/2, yPos - Wid/2, Wid, Wid);
+				break;
+			case 4: // полигон
+				break;
+			case 5: // 4-угольник
+				break;
+			case 6: // прямоугольник
+				g.drawRect(xPos - Wid/2, yPos - Wid/2 + Wid / 4, Wid, Wid / 2);
+				break;
+			case 7: // квадрат
+				g.drawRect(xPos - Wid/2, yPos - Wid/2, Wid, Wid);
+				break;
+			case 8: // треугольник
+				int[] arrX = {xPos - Wid / 2, xPos + Wid / 2, xPos};
+				int[] arrY = {yPos + Wid / 2, yPos + Wid / 2, yPos - Wid / 2};
+				g.drawPolygon(arrX, arrY, 3);
+				break;
+			case 9: // многоугольник
+				break;
+			default:
+				break;
+		}
+	}
 }
 
-// массив фигур
+// коллекция из фигур
+class FiguresCollection
+{
+		// две фигуры
+	public Figure FirstFigure, SecondFigure;
+
+	/* тип связи
+	 *	0 - одиночная фигура
+	 *	1 - фигура 1 в фигуре 2
+	 *	2 - фигуры пересекаются
+	 *	3 - фигура 1 над фигурой 2
+	 *	4 - фигура 1 под фигурой 2
+	 *	5 - фигура 1 слева от фигуры 2
+	 *	6 - фигура 1 справа от фигуры 2
+	 */
+	int ConnectionType;
+
+	// инициируем
+	FiguresCollection(Figure fig1, Figure fig2, int type)
+	{
+		FirstFigure = fig1;
+		SecondFigure = fig2;
+		ConnectionType = type;
+	}
+
+	// инициируем другой коллекцией (по значению)
+	FiguresCollection(FiguresCollection FC)
+	{
+		FirstFigure = new Figure(FC.FirstFigure);
+		SecondFigure = new Figure(FC.SecondFigure);
+		ConnectionType = FC.ConnectionType;
+	}
+
+	// инициируем одиночной фигурой
+	FiguresCollection(Figure fig)
+	{
+		FirstFigure = fig;
+		ConnectionType = 0;
+	}
+
+	public void setType(int type)
+	{
+		ConnectionType = type;
+	}
+
+	public void draw(Graphics g, int xPos, int yPos, int Wid)
+	{
+		// масштабируем 0 - маленький, 1 - нормальный, 2 большой
+		int FstWid = (int)Math.round(Wid * (FirstFigure.size() + 1) / 3.0);
+		int SndWid = 0;
+		if (SecondFigure != null)
+			SndWid = (int)Math.round(Wid * (SecondFigure.size() + 1) / 3.0);
+
+		switch (ConnectionType)
+		{
+			case 0:
+				FirstFigure.draw(g, xPos, yPos, FstWid);
+				break;
+			case 1:
+				FirstFigure.draw(g, xPos, yPos, FstWid/2);
+				SecondFigure.draw(g, xPos, yPos, SndWid);
+				break;
+			case 2:
+				FirstFigure.draw(g, xPos, yPos-FstWid / 12, FstWid);
+				SecondFigure.draw(g, xPos, yPos+FstWid / 12, SndWid);
+				break;
+			case 3:
+				FirstFigure.draw(g, xPos, yPos - FstWid/4, FstWid/3 + FstWid/7);
+				SecondFigure.draw(g, xPos, yPos + FstWid/4, SndWid/3 + SndWid/7);
+				break;
+			case 4:
+				FirstFigure.draw(g, xPos, yPos + FstWid/4, FstWid/3 + FstWid/7);
+				SecondFigure.draw(g, xPos, yPos - FstWid/4, SndWid/3 + SndWid/7);
+				break;
+			case 5:
+				FirstFigure.draw(g, xPos - FstWid/4, yPos, FstWid/3 + FstWid/7);
+				SecondFigure.draw(g, xPos + FstWid/4, yPos, SndWid/3 + SndWid/7);
+				break;
+			case 6:
+				FirstFigure.draw(g, xPos + FstWid/4, yPos, FstWid/3 + FstWid/7);
+				SecondFigure.draw(g, xPos - FstWid/4, yPos, SndWid/3 + SndWid/7);
+				break;
+			default:
+				FirstFigure.draw(g, xPos, yPos, FstWid);
+				break;
+		}
+	}
+}
+
+// массив коллекций фигур
 class FiguresMass
 {
-	private Figure[] Mass;
+	private FiguresCollection[] Mass;
 	private int Count;
 
+	// инициируем массив
 	FiguresMass()
 	{
-		Mass = new Figure[50];
+		Mass = new FiguresCollection[50];
 		Count = 0;
 	}
 
+	// очищаем массив
 	public void reset()
 	{
 		Count = 0;
 	}
 
+	// узнаём количество коллекций
 	public int count()
 	{
 		return Count;
 	}
 
-	public Figure getFigure(int pos)
+	// берём коллекцию фигур
+	public FiguresCollection getFigure(int pos)
 	{
 		return Mass[pos];
 	}
 
+	// добавляем коллекцию фигур
+	public void insertFigure(FiguresCollection FC)
+	{
+		Mass[Count] = new FiguresCollection(FC);
+		Count++;
+	}
+
+	// добавляем одиночную фигуру
 	public void insertFigure(Figure fig)
 	{
-		Mass[Count] = fig;
+		Mass[Count] = new FiguresCollection(fig);
 		Count++;
+	}
+
+	// отрисовываем массив объектов
+	public void draw(Graphics g, int ImageX, int ImageY, int ImageSize)
+	{
+		int xPos = 0, yPos = 0, xSize = 1, ySize = 0, Wid = 0;
+
+		boolean isFinish = false;
+		while (!isFinish)
+		{
+			if (Count <= xSize * xSize)
+			{
+				ySize = Count / xSize + 1;
+				Wid = ImageSize/xSize;
+				isFinish = true;
+			}
+			else
+			{
+				xSize++;
+			}
+		}
+
+		for (int i = 0; i < Count; i++)
+		{
+			xPos = i%xSize;
+			yPos = i/xSize;
+			Mass[i].draw(g, xPos * Wid + Wid / 2 + ImageX, yPos * Wid + Wid / 2 + ImageY, (int)Math.round(Wid * 0.9));
+		}
 	}
 }
 
@@ -565,70 +742,7 @@ class Window1 extends Frame
 	// процедура перерисовки окна
 	public void paint(Graphics g)
 	{
-		int FiguresCount = Figures.count();
-		int xPos = 0, yPos = 0, xSize = 1, ySize = 0, Wid = 0;
-		int ImageX = 100, ImageY = 50, ImageSize = 300;
-
-		boolean isFinish = false;
-		while (!isFinish)
-		{
-			if (FiguresCount <= xSize * xSize)
-			{
-				ySize = FiguresCount / xSize + 1;
-				Wid = ImageSize/xSize;
-				isFinish = true;
-			}
-			else
-				xSize++;
-		}
-
-		for (int i = 0; i < FiguresCount; i++)
-		{
-			xPos = i%xSize;
-			yPos = i/xSize;
-			drawFigure(g, Figures.getFigure(i).fclass(), Figures.getFigure(i).size(), xPos * Wid + ImageX, yPos * Wid + ImageY, (int)Math.round(Wid * 0.9));
-		}
-	}
-
-	void drawFigure(Graphics g, int figure, int size, int xPos, int yPos, int Wid)
-	{
-		// масштабируем 0 - маленький, 1 - нормальный, 2 большой
-		Wid = (int)Math.round(Wid * (size + 1) / 3.0);
-
-		// рисуем выбранную фигуру
-		switch (figure)
-		{
-			case 0: // фигура
-				break;
-			case 1: // овал
-				g.drawOval(xPos, yPos + Wid / 4, Wid, Wid / 2);
-				break;
-			case 2: // эллипс
-				g.drawOval(xPos, yPos + Wid / 4, Wid, Wid / 2);
-				break;
-			case 3: // круг
-				g.drawOval(xPos, yPos, Wid, Wid);
-				break;
-			case 4: // полигон
-				break;
-			case 5: // 4-угольник
-				break;
-			case 6: // прямоугольник
-				g.drawRect(xPos, yPos + Wid / 4, Wid, Wid / 2);
-				break;
-			case 7: // квадрат
-				g.drawRect(xPos, yPos, Wid, Wid);
-				break;
-			case 8: // треугольник
-				int[] arrX = {xPos, xPos + Wid, xPos + Wid / 2};
-				int[] arrY = {yPos + Wid - Wid / 4, yPos + Wid - Wid / 4, yPos + Wid / 2 - Wid / 4};
-				g.drawPolygon(arrX, arrY, 3);
-				break;
-			case 9: // многоугольник
-				break;
-			default:
-				break;
-		}
+		Figures.draw(g, 100, 50, 300);
 	}
 }
 
@@ -703,7 +817,7 @@ class TextToGraphic
 				else
 				{
 					TextToGraphic.Log("Успешно!");
-					// нам удалось восстановить БД и считать из него информацию
+					// нам удалось восстановить БД и считать из неё информацию
 					error = 0;
 				}
 			}
@@ -721,10 +835,12 @@ class TextToGraphic
 			Window1 f = new Window1("Чертить");
 			f.setSize(1000, 500);
 			f.setVisible(true);
+			Log("Приложение готово к вводу");
 		}
 		else
 		{
-			Window1 f = new Window1("Чертить");
+			// если приложение не удалось запустить, выводим сообщение
+			Frame f = new Frame("Окно с ошибкой");
 			JOptionPane.showMessageDialog(null, "Приложение завершилось с ошибкой.\nПросмотрите LaunchLog.txt для получения подробной информации.", "Ошибка", JOptionPane.ERROR_MESSAGE);
 			System.exit(0);
 		}
@@ -795,7 +911,7 @@ class TextToGraphic
 			statement.executeUpdate("insert into PROPNAMES values(3, 'имеющий|имеющая|имеющую!угол|угла|углов|вершину|вершины|вершин')");
 			statement.executeUpdate("insert into PROPNAMES values(4, 'имеющий как минимум|имеющая как минимум|имеющую как минимум')");
 			statement.executeUpdate("insert into PROPNAMES values(5, 'имеющий максимум|имеющая максимум|имеющую максимум')");
-			
+
 			statement.executeUpdate("insert into PROPNAMES values(20, 'звезданутый')");
 		}
 		catch(SQLException e)
@@ -830,7 +946,7 @@ class TextToGraphic
 	public static boolean readDataBase() throws ClassNotFoundException
 	{
 		int error = 0;
-		
+
 		// подключаем драйвер для работы с SQLite
 		Class.forName("org.sqlite.JDBC");
 
@@ -1020,9 +1136,14 @@ class TextToGraphic
 						{
 							// находим имя, очищенное от символов
 							PropertyName = getStringLikeThis(getStringLikeThis(This_String, ANY_PREPROPERTY2, k), SOME_PREPROPERTY);
-							PropertiesString += PropertyName + " ";
-							// добавляем фигуре свойство
-							thisFigure.addProperty(getPropertyByName(PropertyName));
+							// если это нужное свойство
+							Property newProperty = getPropertyByName(PropertyName);
+							if ((newProperty.type() < 3 || newProperty.type() > 5) && newProperty.type() != Property.EMPTY_PROPERTY)
+							{
+								// добавляем фигуре свойство
+								thisFigure.addProperty(newProperty);
+								PropertiesString += PropertyName + " ";
+							}
 						}
 						ta.append(PropertiesString+"\n");
 					}
@@ -1032,9 +1153,6 @@ class TextToGraphic
 					{
 						thisFigure.addProperty(new Property(3, Integer.parseInt(getStringLikeThis(getStringLikeThis(Next_String, HAS_NVERTS), NUMBER_ST))));
 					}
-					
-					for(int k = 0; k < thisFigure.propertyCount(); k++)
-						ta.append("Свойство: "+thisFigure.getProperty(k).type()+"\n");
 
 					// определяем класс нашей фигуры
 					if (thisFigure.refreshClass())
