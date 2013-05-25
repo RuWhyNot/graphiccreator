@@ -751,20 +751,26 @@ class TextToGraphic
 {
 	static String FNames[][];
 	static String PropNames[][];
+	static String RelName[];
 
 	static ProtoFigure ProtoFigures[];
 	static int FCount = 0;
 	static int PCount = 0;
+	static int RCount = 0;
 
-	// --------------- КОНСТАНТЫ (либо выражения, которые задаются один раз, при старте программы) ------------------
+	// --------------- КОНСТАНТЫ (либо выражения, которые задаются один раз при старте программы) ------------------
 
 	// ----- составные выражения
 	// какая-либо фигура
 	static String SOME_FIGURE = ""; // именительный
-	static String SOME_PFIGURE = ""; // предложный
+
+	static String TERMINATION = "";
 
 	// какое-либо пред-свойство
 	static String SOME_PREPROPERTY = "";
+
+	// какое-либо отношение между фигурами
+	static String SOME_RELATION = "";
 
 	// ----- регулярные выражения
 	// словестный символ
@@ -784,6 +790,9 @@ class TextToGraphic
 
 	// любое упоминание геометрических примитивов
 	static String ANY_FIGURE;
+
+	// любое отношение между фигурами
+	static String ANY_RELATION = "";
 
 	// пред-свойство
 	static String ANY_PREPROPERTY = "";
@@ -811,7 +820,7 @@ class TextToGraphic
 				{
 					// восстановленная БД не соответствует необходимой структуре
 					// пишем в консоль об ошибке
-					TextToGraphic.Log("Не удалось подключиться к БД. Приложение будет закрыто.");
+					TextToGraphic.Log("Не удалось восстановить работоспособную БД. Приложение будет закрыто.");
 					error = 2;
 				}
 				else
@@ -865,20 +874,28 @@ class TextToGraphic
 			// уничтожаем таблицу FIGURES, если такая есть
 			statement.executeUpdate("drop table if exists FIGURES");
 			// создаём таблицу
-			statement.executeUpdate("create table FIGURES (ID_FIG integer, PARENT integer, INAME string, RNAME string, DNAME string, VNAME string, TNAME string, PNAME string)");
+			statement.executeUpdate("create table FIGURES (ID_FIG integer, PARENT integer, NAME string, PADEGE_TYPE integer)");
 			// добавляем записи
-			statement.executeUpdate("insert into FIGURES values(0, -1, 'фигура', 'фигуры', 'фигуре', 'фигуру', 'фигурой', 'фигуре')");
-			statement.executeUpdate("insert into FIGURES values(1, 0,'овал', 'овала', 'овалу', 'овал', 'овалом', 'овале')");
-			statement.executeUpdate("insert into FIGURES values(2, 1,'эллипс', 'эллипса', 'эллипсу', 'эллипс', 'эллипсом', 'эллипсе')");
-			statement.executeUpdate("insert into FIGURES values(3, 2,'круг', 'круга', 'кругу', 'круг', 'кругом', 'круге')");
-			statement.executeUpdate("insert into FIGURES values(4, 0,'полигон', 'полигона', 'полигону', 'полигон', 'полигоном', 'полигоне')");
-			statement.executeUpdate("insert into FIGURES values(5, 4,'четырёхугольник', 'четырёхугольника', 'четырёхугольнику', 'четырёхугольник', 'четырёхугольником', 'четырёхугольнике')");
-			statement.executeUpdate("insert into FIGURES values(6, 5,'прямоугольник', 'прямоугольника', 'прямоугольнику', 'прямоугольник', 'прямоугольником', 'прямоугольнике')");
-			statement.executeUpdate("insert into FIGURES values(7, 6,'квадрат', 'квадрата', 'квадрату', 'квадрат', 'квадратом', 'квадрате')");
-			statement.executeUpdate("insert into FIGURES values(8, 4,'треугольник', 'треугольника', 'треугольнику', 'треугольник', 'треугольником', 'треугольнике')");
-			statement.executeUpdate("insert into FIGURES values(9, 4,'многоугольник', 'многоугольника', 'многоугольнику', 'многоугольник', 'многоугольником', 'многоугольнике')");
+			statement.executeUpdate("insert into FIGURES values(0, -1, 'фигур', 1)");
+			statement.executeUpdate("insert into FIGURES values(1, 0, 'овал', 0)");
+			statement.executeUpdate("insert into FIGURES values(2, 1, 'эллипс', 0)");
+			statement.executeUpdate("insert into FIGURES values(3, 2, 'круг', 0)");
+			statement.executeUpdate("insert into FIGURES values(4, 0, 'полигон', 0)");
+			statement.executeUpdate("insert into FIGURES values(5, 4, 'четырёхугольник', 0)");
+			statement.executeUpdate("insert into FIGURES values(6, 5, 'прямоугольник', 0)");
+			statement.executeUpdate("insert into FIGURES values(7, 6, 'квадрат', 0)");
+			statement.executeUpdate("insert into FIGURES values(8, 4, 'треугольник', 0)");
+			statement.executeUpdate("insert into FIGURES values(9, 4, 'многоугольник', 0)");
 			// тест пользовательских свойств
-			statement.executeUpdate("insert into FIGURES values(10, 4,'звезда', 'звезды', 'звезде', 'звезда', 'звездой', 'звезде')");
+			statement.executeUpdate("insert into FIGURES values(10, 4, 'звезд', 1)");
+
+			// уничтожаем таблицу PADEGES, если такая есть
+			statement.executeUpdate("drop table if exists PADEGES");
+			// создаём таблицу
+			statement.executeUpdate("create table PADEGES (PADEGE_TYPE integer, INAME string, RNAME string, DNAME string, VNAME string, TNAME string, PNAME string)");
+			// добавляем записи
+			statement.executeUpdate("insert into PADEGES values(0, '', 'а', 'у', '', 'ом', 'е')");
+			statement.executeUpdate("insert into PADEGES values(1, 'а', 'ы', 'е', 'у', 'ой', 'е')");
 
 			// уничтожаем таблицу PROPERTIES, если такая есть
 			statement.executeUpdate("drop table if exists PROPERTIES");
@@ -899,7 +916,6 @@ class TextToGraphic
 			// тест пользовательских свойств
 			statement.executeUpdate("insert into PROPERTIES values(11, 10, 20, 0)");
 
-
 			// уничтожаем таблицу PROPNAMES, если такая есть
 			statement.executeUpdate("drop table if exists PROPNAMES");
 			// создаём таблицу
@@ -911,14 +927,26 @@ class TextToGraphic
 			statement.executeUpdate("insert into PROPNAMES values(3, 'имеющий|имеющая|имеющую!угол|угла|углов|вершину|вершины|вершин')");
 			statement.executeUpdate("insert into PROPNAMES values(4, 'имеющий как минимум|имеющая как минимум|имеющую как минимум')");
 			statement.executeUpdate("insert into PROPNAMES values(5, 'имеющий максимум|имеющая максимум|имеющую максимум')");
-
+			// тест пользовательских свойств
 			statement.executeUpdate("insert into PROPNAMES values(20, 'звезданутый')");
+
+			// уничтожаем таблицу RELATIONS, если такая есть
+			statement.executeUpdate("drop table if exists RELATIONS");
+			// создаём таблицу
+			statement.executeUpdate("create table RELATIONS (RELATION integer, NAME string)");
+			// добавляем записи
+			statement.executeUpdate("insert into RELATIONS values(1, 'в')");
+			statement.executeUpdate("insert into RELATIONS values(2, 'пересекает')");
+			statement.executeUpdate("insert into RELATIONS values(3, 'сверху от|над')");
+			statement.executeUpdate("insert into RELATIONS values(4, 'снизу от|под')");
+			statement.executeUpdate("insert into RELATIONS values(5, 'слева от|слева')");
+			statement.executeUpdate("insert into RELATIONS values(6, 'справа от|справа')");
 		}
 		catch(SQLException e)
 		{
 			error = 1;
 			// не удалось записать информацию в БД
-			System.err.println(e.getMessage());
+			//System.err.println(e.getMessage());
 		}
 		finally
 		{
@@ -930,7 +958,7 @@ class TextToGraphic
 			catch(SQLException e)
 			{
 				// если не удалось закрыть подключение к БД
-				System.err.println(e);
+				//System.err.println(e);
 			}
 			finally
 			{
@@ -967,24 +995,26 @@ class TextToGraphic
 			}
 
 			// выделяем память под фигуры
-			FNames = new String[count][6];
+			FNames = new String[count][2];
 			ProtoFigures = new ProtoFigure[count];
 
 			// забираем всю информацию о фигурах из таблицы FIGURES
 			int id;
-			rs = statement.executeQuery("select * from FIGURES");
+			String name;
+			SOME_FIGURE = "";
+			rs = statement.executeQuery("select FIG.ID_FIG, FIG.PARENT, FIG.NAME, PAD.INAME, PAD.RNAME, PAD.DNAME, PAD.VNAME, PAD.TNAME, PAD.PNAME from FIGURES as FIG, PADEGES as PAD where FIG.PADEGE_TYPE = PAD.PADEGE_TYPE");
 			while(rs.next())
 			{
 				id = rs.getInt("ID_FIG");
-				FNames[id][0] = rs.getString("INAME");
-				FNames[id][1] = rs.getString("RNAME");
-				FNames[id][2] = rs.getString("DNAME");
-				FNames[id][3] = rs.getString("VNAME");
-				FNames[id][4] = rs.getString("TNAME");
-				FNames[id][5] = rs.getString("PNAME");
+				FNames[id][0] = rs.getString("NAME");
+				FNames[id][1] = rs.getString("INAME");
+				FNames[id][1] += "|" + rs.getString("RNAME");
+				FNames[id][1] += "|" + rs.getString("DNAME");
+				FNames[id][1] += "|" + rs.getString("VNAME");
+				FNames[id][1] += "|" + rs.getString("TNAME");
+				FNames[id][1] += "|" + rs.getString("PNAME");
 
-				SOME_FIGURE += (id > 0 ? "|" : "") + FNames[id][0];
-				SOME_PFIGURE += (id > 0 ? "|" : "") + FNames[id][5];
+				SOME_FIGURE += (id > 0 ? ")|((" : "(") + FNames[id][0] + ")(" + FNames[id][1] + ")";
 				ProtoFigures[id] = new ProtoFigure(id, rs.getInt("PARENT"));
 
 				FCount++;
@@ -1050,12 +1080,33 @@ class TextToGraphic
 				}
 			}
 
+			// узнаём количество отношений в БД
+			rs = statement.executeQuery("select count(*) as COUNT from RELATIONS");
+			while(rs.next())
+			{
+				count = rs.getInt("COUNT");
+			}
+			RCount = count;
+
+			// выделяем память под отношения
+			RelName = new String[RCount];
+
+			// забираем всю информацию о отношениях между фигурами из таблицы RELATIONS
+			rs = statement.executeQuery("select * from RELATIONS");
+			while(rs.next())
+			{
+				id = rs.getInt("RELATION") - 1;
+				RelName[id] = rs.getString("NAME");
+				SOME_RELATION += (id > 1 ? "|" : "") + RelName[id];
+			}
+
 			// задаём регулярные выражения, зависящие от данных из БД
-			ANY_FIGURE = "(^|[\\s])+("+SOME_FIGURE+")([\\s]|\\.|,|$)";
-			FIGURE_IN_FIGURE = "("+SOME_FIGURE+")[\\s]+(в)[\\s]+("+SOME_PFIGURE+")([\\s]|\\.|$)";
+			SOME_FIGURE = "(("+SOME_FIGURE+"))";
+			ANY_FIGURE = "(^|[\\s])+"+SOME_FIGURE+"([\\s]|\\.|,|$)";
+			ANY_RELATION = SOME_FIGURE+"[\\s]+("+SOME_RELATION+")[\\s]+"+SOME_FIGURE+"([\\s]|\\.|$)";
 			ANY_PREPROPERTY = "(^|[\\s])+("+SOME_PREPROPERTY+")([\\s]|\\.|,|$)+";
 			ANY_PREPROPERTY2 = "(^|[\\s])*("+SOME_PREPROPERTY+")([\\s]|\\.|,|$)+";
-			PROPERTY_FIGURE = "[\\s]*(("+SOME_PREPROPERTY+")[^.]*)+[\\s]+("+SOME_FIGURE+")([\\s]|\\.|,|$)";
+			PROPERTY_FIGURE = "[\\s]*(("+SOME_PREPROPERTY+")[^.]*)+[\\s]+"+SOME_FIGURE+"([\\s]|\\.|,|$)";
 			HAS_NVERTS = "(^)(,|[\\s])*("+PropNames[3][0]+")[\\s]+[0-9]+[\\s]+("+PropNames[3][1]+")([\\s]|\\.|,|$)";
 		}
 		catch(SQLException e)
@@ -1074,7 +1125,7 @@ class TextToGraphic
 			catch(SQLException e)
 			{
 				// если не удалось закрыть подключение к БД
-				System.err.println(e);
+				//System.err.println(e);
 			}
 			finally
 			{
@@ -1323,8 +1374,8 @@ class TextToGraphic
 	{
 		for (int i  = 0; i < FCount; i++)
 		{
-			// ищем название фигуры в именительном или винительном падежах
-			if (hasStringLikeThis(FigureName, FNames[i][0]+"|"+FNames[i][3]))
+			// ищем название фигуры в любом из падежей
+			if (hasStringLikeThis(FigureName, "("+FNames[i][0]+")("+FNames[i][1]+")"))
 				return i;
 		}
 		return -1;

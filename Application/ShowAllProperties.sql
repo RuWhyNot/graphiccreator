@@ -1,1 +1,1 @@
-select ASd.INAME as NAME, Fig2.INAME as PARENT, PNames.NAME as PROPERTY, ProP.VALUE as VALUE  from figures as ASd, figures as Fig2, properties as ProP, propnames as PNames where ASd.ID_FIG = ProP.ID_FIG and ProP.PROPERTY = PNames.PROPERTY and ASd.PARENT = Fig2.ID_FIG
+select ASd.NAME , Fig2.NAME as PARENT, PNames.NAME as PROPERTY, ProP.VALUE from figures as ASd, figures as Fig2, properties as ProP, propnames as PNames where ASd.ID_FIG = ProP.ID_FIG and ProP.PROPERTY = PNames.PROPERTY and ASd.PARENT = Fig2.ID_FIG
