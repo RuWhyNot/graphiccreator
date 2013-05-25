@@ -552,8 +552,14 @@ class FiguresCollection
 	// инициируем одиночной фигурой
 	FiguresCollection(Figure fig)
 	{
-		FirstFigure = fig;
+		FirstFigure = new Figure(fig);
 		ConnectionType = 0;
+	}
+
+	// добавляем вторую фигуру
+	public void addSecondFigure(Figure fig)
+	{
+		SecondFigure = new Figure(fig);
 	}
 
 	public void setType(int type)
@@ -566,21 +572,25 @@ class FiguresCollection
 		// масштабируем 0 - маленький, 1 - нормальный, 2 большой
 		int FstWid = (int)Math.round(Wid * (FirstFigure.size() + 1) / 3.0);
 		int SndWid = 0;
+		int conType = 0;
 		if (SecondFigure != null)
+		{
 			SndWid = (int)Math.round(Wid * (SecondFigure.size() + 1) / 3.0);
+			conType = ConnectionType;
+		}
 
-		switch (ConnectionType)
+		switch (conType)
 		{
 			case 0:
 				FirstFigure.draw(g, xPos, yPos, FstWid);
 				break;
 			case 1:
-				FirstFigure.draw(g, xPos, yPos, FstWid/2);
+				FirstFigure.draw(g, xPos, yPos, FstWid/3);
 				SecondFigure.draw(g, xPos, yPos, SndWid);
 				break;
 			case 2:
-				FirstFigure.draw(g, xPos, yPos-FstWid / 12, FstWid);
-				SecondFigure.draw(g, xPos, yPos+FstWid / 12, SndWid);
+				FirstFigure.draw(g, xPos-FstWid / 10, yPos-FstWid / 12, FstWid);
+				SecondFigure.draw(g, xPos+FstWid / 10, yPos+FstWid / 12, SndWid);
 				break;
 			case 3:
 				FirstFigure.draw(g, xPos, yPos - FstWid/4, FstWid/3 + FstWid/7);
@@ -637,7 +647,7 @@ class FiguresMass
 	}
 
 	// добавляем коллекцию фигур
-	public void insertFigure(FiguresCollection FC)
+	public void insertCollection(FiguresCollection FC)
 	{
 		Mass[Count] = new FiguresCollection(FC);
 		Count++;
@@ -751,7 +761,7 @@ class TextToGraphic
 {
 	static String FNames[][];
 	static String PropNames[][];
-	static String RelName[];
+	static String RelNames[];
 
 	static ProtoFigure ProtoFigures[];
 	static int FCount = 0;
@@ -921,10 +931,10 @@ class TextToGraphic
 			// создаём таблицу
 			statement.executeUpdate("create table PROPNAMES (PROPERTY integer, NAME string)");
 			// добавляем записи
-			statement.executeUpdate("insert into PROPNAMES values(0, 'маленький|маленькая!нормальный|нормальная!большой|большая')");
+			statement.executeUpdate("insert into PROPNAMES values(0, 'маленький|маленькая|маленьком|маленькой|маленькую!нормальный|нормальная!большой|большая|большом|большой')");
 			statement.executeUpdate("insert into PROPNAMES values(1, 'не симметричная|не симметричный!симметричная|симметрична|симметричный|симметричную')");
 			statement.executeUpdate("insert into PROPNAMES values(2, 'разомкнута|разомкнутый|не замкнутая|не замкнута|не замкнутой!замкнутый|замкнут|замкнутая|замкнута|замкнутую')");
-			statement.executeUpdate("insert into PROPNAMES values(3, 'имеющий|имеющая|имеющую!угол|угла|углов|вершину|вершины|вершин')");
+			statement.executeUpdate("insert into PROPNAMES values(3, 'имеет|имеющий|имеющая|имеющую!угол|угла|углов|вершину|вершины|вершин')");
 			statement.executeUpdate("insert into PROPNAMES values(4, 'имеющий как минимум|имеющая как минимум|имеющую как минимум')");
 			statement.executeUpdate("insert into PROPNAMES values(5, 'имеющий максимум|имеющая максимум|имеющую максимум')");
 			// тест пользовательских свойств
@@ -935,12 +945,12 @@ class TextToGraphic
 			// создаём таблицу
 			statement.executeUpdate("create table RELATIONS (RELATION integer, NAME string)");
 			// добавляем записи
-			statement.executeUpdate("insert into RELATIONS values(1, 'в')");
-			statement.executeUpdate("insert into RELATIONS values(2, 'пересекает')");
-			statement.executeUpdate("insert into RELATIONS values(3, 'сверху от|над')");
-			statement.executeUpdate("insert into RELATIONS values(4, 'снизу от|под')");
-			statement.executeUpdate("insert into RELATIONS values(5, 'слева от|слева')");
-			statement.executeUpdate("insert into RELATIONS values(6, 'справа от|справа')");
+			statement.executeUpdate("insert into RELATIONS values(1, 'в |внутри ')");
+			statement.executeUpdate("insert into RELATIONS values(2, 'пересекает ')");
+			statement.executeUpdate("insert into RELATIONS values(3, 'сверху от |над ')");
+			statement.executeUpdate("insert into RELATIONS values(4, 'снизу от |под ')");
+			statement.executeUpdate("insert into RELATIONS values(5, 'слева от |слева ')");
+			statement.executeUpdate("insert into RELATIONS values(6, 'справа от |справа ')");
 		}
 		catch(SQLException e)
 		{
@@ -987,48 +997,49 @@ class TextToGraphic
 			statement.setQueryTimeout(30);
 
 			// узнаём количество фигур в БД
-			int count = 0;
+			
 			ResultSet rs = statement.executeQuery("select count(*) as COUNT from FIGURES");
 			while(rs.next())
 			{
-				count = rs.getInt("COUNT");
+				FCount = rs.getInt("COUNT");
 			}
 
 			// выделяем память под фигуры
-			FNames = new String[count][2];
-			ProtoFigures = new ProtoFigure[count];
+			FNames = new String[FCount][8];
+			ProtoFigures = new ProtoFigure[FCount];
 
 			// забираем всю информацию о фигурах из таблицы FIGURES
 			int id;
 			String name;
 			SOME_FIGURE = "";
 			rs = statement.executeQuery("select FIG.ID_FIG, FIG.PARENT, FIG.NAME, PAD.INAME, PAD.RNAME, PAD.DNAME, PAD.VNAME, PAD.TNAME, PAD.PNAME from FIGURES as FIG, PADEGES as PAD where FIG.PADEGE_TYPE = PAD.PADEGE_TYPE");
+			int count = 0;
 			while(rs.next())
 			{
 				id = rs.getInt("ID_FIG");
 				FNames[id][0] = rs.getString("NAME");
 				FNames[id][1] = rs.getString("INAME");
-				FNames[id][1] += "|" + rs.getString("RNAME");
-				FNames[id][1] += "|" + rs.getString("DNAME");
-				FNames[id][1] += "|" + rs.getString("VNAME");
-				FNames[id][1] += "|" + rs.getString("TNAME");
-				FNames[id][1] += "|" + rs.getString("PNAME");
+				FNames[id][2] = rs.getString("RNAME");
+				FNames[id][3] = rs.getString("DNAME");
+				FNames[id][4] = rs.getString("VNAME");
+				FNames[id][5] = rs.getString("TNAME");
+				FNames[id][6] = rs.getString("PNAME");
+				FNames[id][7] = FNames[id][1] + "|" + FNames[id][2] + "|" + FNames[id][3] + "|" + FNames[id][4] + "|" + FNames[id][5] + "|" + FNames[id][6];
 
-				SOME_FIGURE += (id > 0 ? ")|((" : "(") + FNames[id][0] + ")(" + FNames[id][1] + ")";
+				SOME_FIGURE += (id > 0 ? ")|((" : "(") + FNames[id][0] + ")(" + FNames[id][7] + ")";
 				ProtoFigures[id] = new ProtoFigure(id, rs.getInt("PARENT"));
 
-				FCount++;
+				count++;
 			}
 
 			// узнаём количество имён фигур
 			rs = statement.executeQuery("select max(PROPERTY) as MAX from PROPNAMES");
 			while(rs.next())
 			{
-				count = rs.getInt("MAX") + 1;
-				if (count > Property.EMPTY_PROPERTY)
-					count += Property.EMPTY_PROPERTY - 19;
+				PCount = rs.getInt("MAX") + 1;
+				if (PCount > Property.EMPTY_PROPERTY)
+					PCount += Property.EMPTY_PROPERTY - 19;
 			}
-			PCount = count;
 
 			// выделяем память
 			PropNames = new String[PCount][3];
@@ -1084,26 +1095,25 @@ class TextToGraphic
 			rs = statement.executeQuery("select count(*) as COUNT from RELATIONS");
 			while(rs.next())
 			{
-				count = rs.getInt("COUNT");
+				RCount = rs.getInt("COUNT");
 			}
-			RCount = count;
 
 			// выделяем память под отношения
-			RelName = new String[RCount];
+			RelNames = new String[RCount];
 
 			// забираем всю информацию о отношениях между фигурами из таблицы RELATIONS
 			rs = statement.executeQuery("select * from RELATIONS");
 			while(rs.next())
 			{
 				id = rs.getInt("RELATION") - 1;
-				RelName[id] = rs.getString("NAME");
-				SOME_RELATION += (id > 1 ? "|" : "") + RelName[id];
+				RelNames[id] = rs.getString("NAME");
+				SOME_RELATION += (id > 0 ? "|" : "") + RelNames[id];
 			}
 
 			// задаём регулярные выражения, зависящие от данных из БД
 			SOME_FIGURE = "(("+SOME_FIGURE+"))";
 			ANY_FIGURE = "(^|[\\s])+"+SOME_FIGURE+"([\\s]|\\.|,|$)";
-			ANY_RELATION = SOME_FIGURE+"[\\s]+("+SOME_RELATION+")[\\s]+"+SOME_FIGURE+"([\\s]|\\.|$)";
+			ANY_RELATION = "(^)((,|[\\s]|[^.])*[\\s])*("+SOME_RELATION+")[^.]*"+SOME_FIGURE+"([\\s]|\\.|,|$)";
 			ANY_PREPROPERTY = "(^|[\\s])+("+SOME_PREPROPERTY+")([\\s]|\\.|,|$)+";
 			ANY_PREPROPERTY2 = "(^|[\\s])*("+SOME_PREPROPERTY+")([\\s]|\\.|,|$)+";
 			PROPERTY_FIGURE = "[\\s]*(("+SOME_PREPROPERTY+")[^.]*)+[\\s]+"+SOME_FIGURE+"([\\s]|\\.|,|$)";
@@ -1166,6 +1176,8 @@ class TextToGraphic
 				String FigureName;
 				// чистое название свойства
 				String PropertyName;
+				// первая ли это фигура в коллекции
+				boolean isFirstFigure = true;
 
 				// для каждой фигуры
 				for (int j = 0; j < getCountOfStringsLikeThis(Propn, ANY_FIGURE); j++)
@@ -1202,17 +1214,53 @@ class TextToGraphic
 					// если содержится информация о количестве вершин
 					if (hasStringLikeThis(Next_String, HAS_NVERTS))
 					{
-						thisFigure.addProperty(new Property(3, Integer.parseInt(getStringLikeThis(getStringLikeThis(Next_String, HAS_NVERTS), NUMBER_ST))));
+						int numvert = Integer.parseInt(getStringLikeThis(getStringLikeThis(Next_String, HAS_NVERTS), NUMBER_ST));
+						thisFigure.addProperty(new Property(3, numvert));
+						ta.append("Фигура \""+FigureName+"\" имеет "+numvert+" вершин.\n");
+
+						// урезаем строку, чтобы не обработать свойство второй раз
+						This_String = getStartIncStringLikeThis(Next_String, HAS_NVERTS);
+						Next_String = getEndStringLikeThis(Next_String, HAS_NVERTS);
 					}
 
 					// определяем класс нашей фигуры
 					if (thisFigure.refreshClass())
 					{	// если фигура изменила класс, то сообщаем об этом
-						ta.append("Под описание подходит: "+FNames[thisFigure.fclass()][0]+"\n");
+						ta.append("Под описание подходит: "+FNames[thisFigure.fclass()][0]+FNames[thisFigure.fclass()][1]+"\n");
 					}
 
-					// добавляем фигуру в список на отрисовку
-					fr.insertFigure(thisFigure);
+					
+
+					// если это вторая фигура в коллекции
+					if (!isFirstFigure)
+					{
+						// добавляем информацию о фигуре в последнюю обработанную коллекцию
+						fr.getFigure(fr.count() - 1).addSecondFigure(thisFigure);
+						isFirstFigure = true;
+					}
+					else if (hasStringLikeThis(Next_String, ANY_RELATION))
+					{	// если содержится информация об отношении этой фигуры с другой фигурой
+
+						// вносим первую фигуру в коллекцию
+						fr.insertFigure(thisFigure);
+						// получаем тип отношения
+						int relation = getRelationByName(getStringLikeThis(getStringLikeThis(Next_String, ANY_RELATION), SOME_RELATION));
+						// устонавливаем тип отношения
+						fr.getFigure(fr.count() - 1).setType(relation);
+
+						ta.append(relation+" "+getStringLikeThis(getStringLikeThis(Next_String, ANY_RELATION), SOME_RELATION)+"\n");
+
+						// урезаем строку, чтобы не обработать свойство второй раз
+						This_String = getStartIncStringLikeThis(Next_String, SOME_RELATION);
+						Next_String = getEndStringLikeThis(Next_String, SOME_RELATION);
+
+						isFirstFigure = false;
+					}
+					else // если это простая одиночная фигура
+					{
+						// добавляем фигуру в список на отрисовку
+						fr.insertFigure(thisFigure);
+					}
 				}
 			}
 		}
@@ -1375,7 +1423,7 @@ class TextToGraphic
 		for (int i  = 0; i < FCount; i++)
 		{
 			// ищем название фигуры в любом из падежей
-			if (hasStringLikeThis(FigureName, "("+FNames[i][0]+")("+FNames[i][1]+")"))
+			if (hasStringLikeThis(FigureName, "("+FNames[i][0]+")("+FNames[i][7]+")"))
 				return i;
 		}
 		return -1;
@@ -1399,6 +1447,18 @@ class TextToGraphic
 		}
 
 		return new Property();
+	}
+
+	// определить отношение по названию
+	private static int getRelationByName(String RelName)
+	{
+		for (int i = 0; i < RCount; i++)
+		{
+			// ищем название отношения в любом из падежей
+			if (hasStringLikeThis(RelName, RelNames[i]))
+				return i + 1;
+		}
+		return -1;
 	}
 }
 
