@@ -4,6 +4,8 @@ import java.sql.*;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -696,9 +698,10 @@ class Window1 extends Frame
 	FiguresMass Figures = new FiguresMass();
 
 	// объекты окна
-	TextField Field;
+	TextArea Field;
 	Label Label1;
 	TextArea Area;
+	MenuBar MenuB = new MenuBar();
 
 	// инициализация
 	Window1(String s)
@@ -721,32 +724,86 @@ class Window1 extends Frame
 
 		// создаём лейбл
 		Label1 = new Label();
-		Label1.setBounds(525, 360, 1000, 30);
+		Label1.setBounds(500, 410, 900, 30);
 		add(Label1);
 
 		// поле вывода
 		Area = new TextArea("", 50, 50, TextArea.SCROLLBARS_BOTH);
 		Area.setEditable(false);
-		Area.setBounds(525, 50, 450, 300);
+		Area.setBounds(500, 100, 450, 250);
 		add(Area);
 
 		// создание поля ввода
-		Field = new TextField(300);
-		Field.setBounds(25, 360, 450, 30);
+		Field = new TextArea("", 50, 50, TextArea.SCROLLBARS_VERTICAL_ONLY);
+		//Field.setEditable(false);
+		Field.setBounds(25, 360, 450, 70);
 		add(Field);
 
 		// создание кнопки
 		Button Btn1 = new Button("Очистить");
 		// размещение кнопки
-		Btn1.setBounds(25, 420, 100, 30);
+		Btn1.setBounds(500, 380, 100, 30);
 		add(Btn1);
 
 		// обработчик нажатия Enter
-		Field.addActionListener(new ActLis(this));
+		//Field.addActionListener(new ActLis(this));
 		Field.addTextListener(new ActLis(this));
 
 		// создание обработчика нажатия кнопки
 		Btn1.addActionListener(new ActLis(this));
+
+		setMenuBar(MenuB);
+
+		Menu MFile = new Menu("Файл");
+		Menu MHelp = new Menu("Справка");
+
+		MenuB.add(MFile);
+		MenuB.add(MHelp);
+
+		MenuItem MIOpen = new MenuItem("Открыть файл", new MenuShortcut(KeyEvent.VK_0));
+		MenuItem MIExit = new MenuItem("Выход", new MenuShortcut(KeyEvent.VK_Q));
+
+		MenuItem MIAbout = new MenuItem("О программе");
+
+		MFile.add(MIOpen);
+		MFile.addSeparator();
+		MFile.add(MIExit);
+
+		MHelp.add(MIAbout);
+
+		// Открыть файл
+		MIOpen.addActionListener(new ActionListener()
+		{
+			public void actionPerformed(ActionEvent e)
+			{
+				FileDialog fd = new FileDialog(new Frame(),	" Загрузить", FileDialog.LOAD);
+				fd.setVisible(true);
+				if (fd.getFile() != null)
+				{
+					String FilePath = fd.getDirectory()+fd.getFile();
+					//Area.append(FilePath);
+					readFile(FilePath);
+				}
+			}
+		});
+
+		// Выход
+		MIExit.addActionListener(new ActionListener()
+		{
+			public void actionPerformed(ActionEvent e)
+			{
+				System.exit(0);
+			}
+		});
+
+		// О программе
+		MIAbout.addActionListener(new ActionListener()
+		{
+			public void actionPerformed(ActionEvent e)
+			{
+				JOptionPane.showMessageDialog(null, "Распознавание текста\nстудент НИИ ИС-09 Павел Гребнев\n2013г", "О программе", JOptionPane.INFORMATION_MESSAGE);
+			}
+		});
 	}
 
 	// процедура перерисовки окна
@@ -754,6 +811,29 @@ class Window1 extends Frame
 	{
 		Figures.draw(g, 100, 50, 300);
 	}
+	
+	public void readFile(String FileName)
+    {
+        try
+        {
+            FileReader fr = new FileReader(FileName);
+            StringBuffer sb = new StringBuffer();
+            int symbol;
+            while((symbol = fr.read()) != -1)
+            {
+                sb.append((char)symbol);
+            }
+            Field.setText(sb.toString());
+        }
+        catch (FileNotFoundException ex)
+        {
+            JOptionPane.showMessageDialog(null, ex.toString(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+        catch (IOException ex)
+        {
+            JOptionPane.showMessageDialog(null, ex.toString(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
 }
 
 // основной класс
@@ -791,6 +871,9 @@ class TextToGraphic
 
 	// имеет № углов
 	static String HAS_NVERTS = "";
+
+	// несколько фигур
+	static String MANYFIGURES = "";
 
 	// фигура в фигуре
 	static String FIGURE_IN_FIGURE = "";
@@ -852,14 +935,14 @@ class TextToGraphic
 			Log("Открытие окна");
 			// создаём новое окно и указываем заголовок
 			Window1 f = new Window1("Чертить");
-			f.setSize(1000, 500);
+			f.setSize(980, 450);
 			f.setVisible(true);
 			Log("Приложение готово к вводу");
 		}
 		else
 		{
 			// если приложение не удалось запустить, выводим сообщение
-			Frame f = new Frame("Окно с ошибкой");
+			//Frame f = new Frame("Окно с ошибкой");
 			JOptionPane.showMessageDialog(null, "Приложение завершилось с ошибкой.\nПросмотрите LaunchLog.txt для получения подробной информации.", "Ошибка", JOptionPane.ERROR_MESSAGE);
 			System.exit(0);
 		}
@@ -997,7 +1080,6 @@ class TextToGraphic
 			statement.setQueryTimeout(30);
 
 			// узнаём количество фигур в БД
-			
 			ResultSet rs = statement.executeQuery("select count(*) as COUNT from FIGURES");
 			while(rs.next())
 			{
@@ -1118,6 +1200,7 @@ class TextToGraphic
 			ANY_PREPROPERTY2 = "(^|[\\s])*("+SOME_PREPROPERTY+")([\\s]|\\.|,|$)+";
 			PROPERTY_FIGURE = "[\\s]*(("+SOME_PREPROPERTY+")[^.]*)+[\\s]+"+SOME_FIGURE+"([\\s]|\\.|,|$)";
 			HAS_NVERTS = "(^)(,|[\\s])*("+PropNames[3][0]+")[\\s]+[0-9]+[\\s]+("+PropNames[3][1]+")([\\s]|\\.|,|$)";
+			MANYFIGURES = "(^)(,|[\\s])*[0-9]+(("+SOME_PREPROPERTY+")[^.]*)+*("+SOME_FIGURE+")([\\s]|\\.|,|$)";
 		}
 		catch(SQLException e)
 		{
@@ -1219,7 +1302,6 @@ class TextToGraphic
 						ta.append("Фигура \""+FigureName+"\" имеет "+numvert+" вершин.\n");
 
 						// урезаем строку, чтобы не обработать свойство второй раз
-						This_String = getStartIncStringLikeThis(Next_String, HAS_NVERTS);
 						Next_String = getEndStringLikeThis(Next_String, HAS_NVERTS);
 					}
 
@@ -1229,7 +1311,20 @@ class TextToGraphic
 						ta.append("Под описание подходит: "+FNames[thisFigure.fclass()][0]+FNames[thisFigure.fclass()][1]+"\n");
 					}
 
-					
+					// смотрим, нет ли упоминания о количестве фигур
+					if (hasStringLikeThis(Next_String, MANYFIGURES))
+					{
+						String FigureName2 = getStringLikeThis(getStringLikeThis(This_String, MANYFIGURES), SOME_FIGURE);
+						if (FigureName.equals(FigureName2))
+						{
+							ta.append("Оле\n");
+							int fCount = Integer.parseInt(getStringLikeThis(getStringLikeThis(This_String, MANYFIGURES), NUMBER_ST));
+							for (int k = 0; k < fCount - 1; k++)
+							{
+								fr.insertFigure(thisFigure);
+							}
+						}
+					}
 
 					// если это вторая фигура в коллекции
 					if (!isFirstFigure)
@@ -1251,7 +1346,6 @@ class TextToGraphic
 						ta.append(relation+" "+getStringLikeThis(getStringLikeThis(Next_String, ANY_RELATION), SOME_RELATION)+"\n");
 
 						// урезаем строку, чтобы не обработать свойство второй раз
-						This_String = getStartIncStringLikeThis(Next_String, SOME_RELATION);
 						Next_String = getEndStringLikeThis(Next_String, SOME_RELATION);
 
 						isFirstFigure = false;
@@ -1465,7 +1559,7 @@ class TextToGraphic
 // обработчик событий
 class ActLis implements ActionListener, TextListener
 {
-	private TextField tf;
+	private TextArea tf;
 	private Label lb;
 	private TextArea ta;
 	private FiguresMass fr;
