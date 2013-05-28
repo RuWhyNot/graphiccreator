@@ -746,13 +746,13 @@ class Window1 extends Frame
 		// размещение кнопки
 		Btn1.setBounds(500, 380, 100, 30);
 		add(Btn1);
-		
+
 		// создание кнопки 2
 		Button Btn2 = new Button("Очистить");
 		// размещение кнопки
 		Btn2.setBounds(630, 380, 100, 30);
 		add(Btn2);
-		
+
 		CB = new Checkbox("Распознавание в реальном времени", true);
 		CB.setBounds(500, 350, 300, 30);
 		add(CB);
@@ -767,7 +767,7 @@ class Window1 extends Frame
 		Btn2.addActionListener(new ActionListener()
 		{
 			public void actionPerformed(ActionEvent e)
-			{	// очищаем поле ввода 
+			{	// очищаем поле ввода
 				Field.replaceRange("", 0, 10000);
 			}
 		});
@@ -808,7 +808,7 @@ class Window1 extends Frame
 				}
 			}
 		});
-		
+
 		// Сохранить текст
 		MISave.addActionListener(new ActionListener()
 		{
@@ -872,7 +872,7 @@ class Window1 extends Frame
             JOptionPane.showMessageDialog(null, "Не удалось прочитать файл. Возможно файл недоступен для чтения или повреждён.", "Ошибка", JOptionPane.ERROR_MESSAGE);
         }
     }
-	
+
 	// сохранить содержимое Field в файл
 	public void writeToFile(String FileName)
     {
@@ -908,9 +908,7 @@ class TextToGraphic
 
 	// ----- составные выражения
 	// какая-либо фигура
-	static String SOME_FIGURE = ""; // именительный
-
-	static String TERMINATION = "";
+	static String SOME_FIGURE = "";
 
 	// какое-либо пред-свойство
 	static String SOME_PREPROPERTY = "";
@@ -920,7 +918,7 @@ class TextToGraphic
 
 	// ----- регулярные выражения
 	// словестный символ
-	final static String WORD_CHAR = "[а-яА-Яa-zA-Z_0-9]";
+	final static String WORD_CHAR = "[а-яА-Яa-zA-Z]";
 
 	// число
 	final static String NUMBER_ST = "[0-9]+";
@@ -954,12 +952,10 @@ class TextToGraphic
 	public static void main(String[] args) throws ClassNotFoundException
 	{
 		int error = 0;
-		Log("Работаем с базой данных");
 
 		String jdbcLibraryName = "sqlite-jdbc-3.7.2.jar";
 		String dbName = "onto.db";
 
-		
 		if (!(new File(jdbcLibraryName)).exists())
 		{
 			// отсутствует библиотека
@@ -968,6 +964,8 @@ class TextToGraphic
 		}
 		else // если библиотеки найдены
 		{
+			Log("Работаем с базой данных");
+
 			// если файл БД существует
 			if ((new File(dbName)).exists())
 			{
@@ -1355,6 +1353,8 @@ class TextToGraphic
 				String FigureName;
 				// чистое название свойства
 				String PropertyName;
+				// вспомогательная строка
+				String nextCroppedString;
 				// первая ли это фигура в коллекции
 				boolean isFirstFigure = true;
 
@@ -1390,8 +1390,10 @@ class TextToGraphic
 						ta.append(PropertiesString+"\n");
 					}
 
+					// отрезаем от следующей строки кусок до следующей фигуры
+					nextCroppedString = getStartIncStringLikeThis(Next_String, ANY_FIGURE);
 					// если содержится информация о количестве вершин
-					if (hasStringLikeThis(Next_String, HAS_NVERTS))
+					if (hasStringLikeThis(nextCroppedString, HAS_NVERTS))
 					{
 						int numvert = Integer.parseInt(getStringLikeThis(getStringLikeThis(Next_String, HAS_NVERTS), NUMBER_ST));
 						thisFigure.addProperty(new Property(3, numvert));
@@ -1408,7 +1410,7 @@ class TextToGraphic
 					}
 
 					// смотрим, нет ли упоминания о количестве фигур
-					if (hasStringLikeThis(Next_String, MANYFIGURES))
+					if (hasStringLikeThis(This_String, MANYFIGURES))
 					{
 						String FigureName2 = getStringLikeThis(getStringLikeThis(This_String, MANYFIGURES), SOME_FIGURE);
 						if (FigureName.equals(FigureName2))
@@ -1429,7 +1431,7 @@ class TextToGraphic
 						fr.getFigure(fr.count() - 1).addSecondFigure(thisFigure);
 						isFirstFigure = true;
 					}
-					else if (hasStringLikeThis(Next_String, ANY_RELATION))
+					else if (hasStringLikeThis(nextCroppedString, ANY_RELATION))
 					{	// если содержится информация об отношении этой фигуры с другой фигурой
 
 						// вносим первую фигуру в коллекцию
@@ -1659,15 +1661,14 @@ class ActLis implements ActionListener, TextListener
 	private FiguresMass fr;
 	private Window1 window;
 
+	// при создании обработчика
 	ActLis(Window1 window)
 	{
-
-	this.window = window;
-	this.tf = window.Field;
-	this.lb = window.Label1;
-	this.ta = window.Area;
-	this.fr = window.Figures;
-
+		this.window = window;
+		this.tf = window.Field;
+		this.lb = window.Label1;
+		this.ta = window.Area;
+		this.fr = window.Figures;
 	}
 
 	// при нажатии кнопки "Распознать"
