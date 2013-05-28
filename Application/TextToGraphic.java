@@ -5,6 +5,7 @@ import java.sql.*;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Scanner;
 import java.util.regex.Matcher;
@@ -702,6 +703,7 @@ class Window1 extends Frame
 	Label Label1;
 	TextArea Area;
 	MenuBar MenuB = new MenuBar();
+	Checkbox CB;
 
 	// инициализация
 	Window1(String s)
@@ -739,19 +741,38 @@ class Window1 extends Frame
 		Field.setBounds(25, 360, 450, 70);
 		add(Field);
 
-		// создание кнопки
-		Button Btn1 = new Button("Очистить");
+		// создание кнопки 1
+		Button Btn1 = new Button("Распознать");
 		// размещение кнопки
 		Btn1.setBounds(500, 380, 100, 30);
 		add(Btn1);
+		
+		// создание кнопки 2
+		Button Btn2 = new Button("Очистить");
+		// размещение кнопки
+		Btn2.setBounds(630, 380, 100, 30);
+		add(Btn2);
+		
+		CB = new Checkbox("Распознавание в реальном времени", true);
+		CB.setBounds(500, 350, 300, 30);
+		add(CB);
 
-		// обработчик нажатия Enter
-		//Field.addActionListener(new ActLis(this));
+		// обработчик ввода текста
 		Field.addTextListener(new ActLis(this));
 
-		// создание обработчика нажатия кнопки
+		// нажатие кнопки "Распознать"
 		Btn1.addActionListener(new ActLis(this));
 
+		// нажатие кнопки "Очистить"
+		Btn2.addActionListener(new ActionListener()
+		{
+			public void actionPerformed(ActionEvent e)
+			{	// очищаем поле ввода 
+				Field.replaceRange("", 0, 10000);
+			}
+		});
+
+		// главное меню приложения
 		setMenuBar(MenuB);
 
 		Menu MFile = new Menu("Файл");
@@ -760,12 +781,14 @@ class Window1 extends Frame
 		MenuB.add(MFile);
 		MenuB.add(MHelp);
 
-		MenuItem MIOpen = new MenuItem("Открыть файл", new MenuShortcut(KeyEvent.VK_0));
+		MenuItem MIOpen = new MenuItem("Открыть файл", new MenuShortcut(KeyEvent.VK_O));
+		MenuItem MISave = new MenuItem("Сохранить текст..", new MenuShortcut(KeyEvent.VK_S));
 		MenuItem MIExit = new MenuItem("Выход", new MenuShortcut(KeyEvent.VK_Q));
 
 		MenuItem MIAbout = new MenuItem("О программе");
 
 		MFile.add(MIOpen);
+		MFile.add(MISave);
 		MFile.addSeparator();
 		MFile.add(MIExit);
 
@@ -776,13 +799,27 @@ class Window1 extends Frame
 		{
 			public void actionPerformed(ActionEvent e)
 			{
-				FileDialog fd = new FileDialog(new Frame(),	" Загрузить", FileDialog.LOAD);
+				FileDialog fd = new FileDialog(new Frame(),	"Открыть файл", FileDialog.LOAD);
 				fd.setVisible(true);
 				if (fd.getFile() != null)
 				{
 					String FilePath = fd.getDirectory()+fd.getFile();
-					//Area.append(FilePath);
 					readFile(FilePath);
+				}
+			}
+		});
+		
+		// Сохранить текст
+		MISave.addActionListener(new ActionListener()
+		{
+			public void actionPerformed(ActionEvent e)
+			{
+				FileDialog fd = new FileDialog(new Frame(),	" Сохранить как..", FileDialog.LOAD);
+				fd.setVisible(true);
+				if (fd.getFile() != null)
+				{
+					String FilePath = fd.getDirectory()+fd.getFile();
+					writeToFile(FilePath);
 				}
 			}
 		});
@@ -811,7 +848,8 @@ class Window1 extends Frame
 	{
 		Figures.draw(g, 100, 50, 300);
 	}
-	
+
+	// считать содержимое файла в Field
 	public void readFile(String FileName)
     {
         try
@@ -827,12 +865,30 @@ class Window1 extends Frame
         }
         catch (FileNotFoundException ex)
         {
-            JOptionPane.showMessageDialog(null, ex.toString(), "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(null, "Не удалось найти файл.", "Ошибка", JOptionPane.ERROR_MESSAGE);
         }
         catch (IOException ex)
         {
-            JOptionPane.showMessageDialog(null, ex.toString(), "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(null, "Не удалось прочитать файл. Возможно файл недоступен для чтения или повреждён.", "Ошибка", JOptionPane.ERROR_MESSAGE);
         }
+    }
+	
+	// сохранить содержимое Field в файл
+	public void writeToFile(String FileName)
+    {
+		String strText = Field.getText().trim();
+		try
+		{
+			FileWriter fw = new FileWriter(FileName);
+			fw.write(strText);
+			fw.flush();
+			fw.close();
+			JOptionPane.showMessageDialog(null, "Файл сохранён.", "Успешно", JOptionPane.INFORMATION_MESSAGE);
+		}
+		catch (IOException ex)
+		{
+			JOptionPane.showMessageDialog(null, "Не удалось записать файл.\nВозможно файл или каталог защищены от записи.", "Ошибка", JOptionPane.ERROR_MESSAGE);
+		}
     }
 }
 
@@ -900,33 +956,75 @@ class TextToGraphic
 		int error = 0;
 		Log("Работаем с базой данных");
 
-		// пытаемся считать информацию из БД
-		if (!readDataBase())
+		String jdbcLibraryName = "sqlite-jdbc-3.7.2.jar";
+		String dbName = "onto.db";
+
+		
+		if (!(new File(jdbcLibraryName)).exists())
 		{
-			error = 1;
-			TextToGraphic.Log("Не удалось считать информацию из базы данных. Попытка восстановить стандартную базу..");
-			// не вышло, пытаемся восстановить стандатрную базу
-			if (createNewDataBase())
+			// отсутствует библиотека
+			JOptionPane.showMessageDialog(null, "Отсутствует поставляемая вместе с приложением библиотека sqlite-jdbc-3.7.2.jar\nБиблиотеку можно скачать по следующему адресу https://bitbucket.org/xerial/sqlite-jdbc/downloads/sqlite-jdbc-3.7.2.jar", "Ошибка", JOptionPane.ERROR_MESSAGE);
+			error = 3;
+		}
+		else // если библиотеки найдены
+		{
+			// если файл БД существует
+			if ((new File(dbName)).exists())
 			{
-				// если вышло создать, пробуем подключиться снова
+				// пытаемся считать информацию из БД
 				if (!readDataBase())
 				{
-					// восстановленная БД не соответствует необходимой структуре
-					// пишем в консоль об ошибке
-					TextToGraphic.Log("Не удалось восстановить работоспособную БД. Приложение будет закрыто.");
-					error = 2;
-				}
-				else
-				{
-					TextToGraphic.Log("Успешно!");
-					// нам удалось восстановить БД и считать из неё информацию
-					error = 0;
+					// не вышло
+					error = 1;
+					TextToGraphic.Log("Не удалось прочитать информацию из БД.\nВозможно она была повреждена.");
+					JOptionPane.showMessageDialog(null, "Не удалось прочитать информацию из БД.\nВозможно она была повреждена.", "Ошибка", JOptionPane.ERROR_MESSAGE);
 				}
 			}
 			else
 			{
-				error = 1;
-				TextToGraphic.Log("Не удалось восстановить БД. Удалите файл базы данных и перезапустите приложение.");
+				TextToGraphic.Log("Не нашли файл базы данных. Попытка восстановить стандартную базу..");
+				// пытаемся восстановить стандатрную базу
+				if (createNewDataBase())
+				{
+					// если вышло создать, пробуем подключиться
+					if (!readDataBase())
+					{
+						// восстановленная БД не соответствует необходимой структуре
+						// пишем в консоль об ошибке
+						TextToGraphic.Log("Не удалось воссоздать работоспособную БД. Приложение будет закрыто.");
+						JOptionPane.showMessageDialog(null, "Не удалось воссоздать работоспособную БД. Приложение будет закрыто.", "Ошибка", JOptionPane.ERROR_MESSAGE);
+						error = 2;
+					}
+					else
+					{
+						TextToGraphic.Log("Успешно!");
+						// нам удалось восстановить БД и считать из неё информацию
+						error = 0;
+					}
+				}
+				else // если у нас не вышло создать новый файл БД
+				{
+					try
+					{
+						// проверка на возможность записи в каталог
+						FileWriter fw = new FileWriter("testexamplefile.test");
+						fw.write(" ");
+						fw.flush();
+						fw.close();
+						File f = new File("testexamplefile.test");
+						f.delete();
+
+						TextToGraphic.Log("Не удалось восстановить БД. Удалите файл базы данных и перезапустите приложение.");
+						JOptionPane.showMessageDialog(null, "Не удалось восстановить БД. Удалите файл базы данных и перезапустите приложение.", "Ошибка", JOptionPane.ERROR_MESSAGE);
+						error = 1;
+					}
+					catch (IOException ex)
+					{
+						TextToGraphic.Log("Не удалось восстановить БД. Каталог защищён от записи.");
+						JOptionPane.showMessageDialog(null, "Не удалось восстановить БД. Каталог защищён от записи.", "Ошибка", JOptionPane.ERROR_MESSAGE);
+						error = 4;
+					}
+				}
 			}
 		}
 
@@ -941,9 +1039,7 @@ class TextToGraphic
 		}
 		else
 		{
-			// если приложение не удалось запустить, выводим сообщение
-			//Frame f = new Frame("Окно с ошибкой");
-			JOptionPane.showMessageDialog(null, "Приложение завершилось с ошибкой.\nПросмотрите LaunchLog.txt для получения подробной информации.", "Ошибка", JOptionPane.ERROR_MESSAGE);
+			// если приложение не удалось запустить
 			System.exit(0);
 		}
 	}
@@ -1015,9 +1111,9 @@ class TextToGraphic
 			statement.executeUpdate("create table PROPNAMES (PROPERTY integer, NAME string)");
 			// добавляем записи
 			statement.executeUpdate("insert into PROPNAMES values(0, 'маленький|маленькая|маленьком|маленькой|маленькую!нормальный|нормальная!большой|большая|большом|большой')");
-			statement.executeUpdate("insert into PROPNAMES values(1, 'не симметричная|не симметричный!симметричная|симметрична|симметричный|симметричную')");
+			statement.executeUpdate("insert into PROPNAMES values(1, 'не симметричная|не симметричный!симметричная|симметрична|симметричной|симметричный|симметричную|симметричного')");
 			statement.executeUpdate("insert into PROPNAMES values(2, 'разомкнута|разомкнутый|не замкнутая|не замкнута|не замкнутой!замкнутый|замкнут|замкнутая|замкнута|замкнутую')");
-			statement.executeUpdate("insert into PROPNAMES values(3, 'имеет|имеющий|имеющая|имеющую!угол|угла|углов|вершину|вершины|вершин')");
+			statement.executeUpdate("insert into PROPNAMES values(3, 'имеет|имеющий|имеющая|имеющего|имеющую!угол|угла|углов|вершину|вершины|вершин')");
 			statement.executeUpdate("insert into PROPNAMES values(4, 'имеющий как минимум|имеющая как минимум|имеющую как минимум')");
 			statement.executeUpdate("insert into PROPNAMES values(5, 'имеющий максимум|имеющая максимум|имеющую максимум')");
 			// тест пользовательских свойств
@@ -1200,7 +1296,7 @@ class TextToGraphic
 			ANY_PREPROPERTY2 = "(^|[\\s])*("+SOME_PREPROPERTY+")([\\s]|\\.|,|$)+";
 			PROPERTY_FIGURE = "[\\s]*(("+SOME_PREPROPERTY+")[^.]*)+[\\s]+"+SOME_FIGURE+"([\\s]|\\.|,|$)";
 			HAS_NVERTS = "(^)(,|[\\s])*("+PropNames[3][0]+")[\\s]+[0-9]+[\\s]+("+PropNames[3][1]+")([\\s]|\\.|,|$)";
-			MANYFIGURES = "(^)(,|[\\s])*[0-9]+(("+SOME_PREPROPERTY+")[^.]*)+*("+SOME_FIGURE+")([\\s]|\\.|,|$)";
+			MANYFIGURES = "(^)(,|[\\s])*[0-9]+(("+SOME_PREPROPERTY+")[^.]*)*("+SOME_FIGURE+")([\\s]|\\.|,|$)";
 		}
 		catch(SQLException e)
 		{
@@ -1342,8 +1438,6 @@ class TextToGraphic
 						int relation = getRelationByName(getStringLikeThis(getStringLikeThis(Next_String, ANY_RELATION), SOME_RELATION));
 						// устонавливаем тип отношения
 						fr.getFigure(fr.count() - 1).setType(relation);
-
-						ta.append(relation+" "+getStringLikeThis(getStringLikeThis(Next_String, ANY_RELATION), SOME_RELATION)+"\n");
 
 						// урезаем строку, чтобы не обработать свойство второй раз
 						Next_String = getEndStringLikeThis(Next_String, SOME_RELATION);
@@ -1567,19 +1661,21 @@ class ActLis implements ActionListener, TextListener
 
 	ActLis(Window1 window)
 	{
-		this.window = window;
-		this.tf = window.Field;
-		this.lb = window.Label1;
-		this.ta = window.Area;
-		this.fr = window.Figures;
+
+	this.window = window;
+	this.tf = window.Field;
+	this.lb = window.Label1;
+	this.ta = window.Area;
+	this.fr = window.Figures;
+
 	}
 
-	// при нажатии Enter или кнопки
+	// при нажатии кнопки "Распознать"
 	public void actionPerformed(ActionEvent ae)
 	{
 		ta.replaceRange("", 0, 10000);
 		fr.reset();
-		tf.setText("");
+		lb.setText(TextToGraphic.AnalyseText(tf.getText(), ta, fr));
 		window.update(window.getGraphics());
 		window.paint(window.getGraphics());
 	}
@@ -1587,10 +1683,13 @@ class ActLis implements ActionListener, TextListener
 	// при изменении текста
 	public void textValueChanged(TextEvent e)
 	{
-		ta.replaceRange("", 0, 10000);
-		fr.reset();
-		lb.setText(TextToGraphic.AnalyseText(tf.getText(), ta, fr));
-		window.update(window.getGraphics());
-		window.paint(window.getGraphics());
+		if (window.CB.getState())
+		{
+			ta.replaceRange("", 0, 10000);
+			fr.reset();
+			lb.setText(TextToGraphic.AnalyseText(tf.getText(), ta, fr));
+			window.update(window.getGraphics());
+			window.paint(window.getGraphics());
+		}
 	}
 }
