@@ -544,7 +544,7 @@ class FiguresCollection
 		SecondFigure = new FiguresCollection(fig2);
 		ConnectionType = type;
 	}
-	
+
 	FiguresCollection(Figure fig1, FiguresCollection fig2, int type)
 	{
 		FirstFigure = new Figure(fig1);
@@ -952,7 +952,7 @@ class TextToGraphic
 
 	// ----- регул€рные выражени€
 	// словестный символ
-	final static String WORD_CHAR = "[а-€ј-яa-zA-Z]";
+	final static String WORD_CHAR = "[а-€ј-яa-zA-Z0-9]";
 
 	// число
 	final static String NUMBER_ST = "[0-9]+";
@@ -1328,7 +1328,7 @@ class TextToGraphic
 			ANY_PREPROPERTY2 = "(^|[\\s])*("+SOME_PREPROPERTY+")([\\s]|\\.|,|$)+";
 			PROPERTY_FIGURE = "[\\s]*(("+SOME_PREPROPERTY+")[^.]*)+[\\s]+"+SOME_FIGURE+"([\\s]|\\.|,|$)";
 			HAS_NVERTS = "(^)(,|[\\s])*("+PropNames[3][0]+")[\\s]+[0-9]+[\\s]+("+PropNames[3][1]+")([\\s]|\\.|,|$)";
-			MANYFIGURES = "(^)(,|[\\s])*[0-9]+(("+SOME_PREPROPERTY+")[^.]*)*("+SOME_FIGURE+")([\\s]|\\.|,|$)";
+			MANYFIGURES = "[0-9]+(("+SOME_PREPROPERTY+")[^.]*)*[\\s]+("+SOME_FIGURE+")([\\s]|\\.|,|$)";
 		}
 		catch(SQLException e)
 		{
@@ -1398,12 +1398,12 @@ class TextToGraphic
 				for (int j = 0; j < getCountOfStringsLikeThis(Propn, ANY_FIGURE); j++)
 				{
 					This_String = getStartIncStringLikeThis(Next_String, ANY_FIGURE);
+					ta.append("\""+This_String+"\"\n");
 					Next_String = getEndStringLikeThis(Next_String, ANY_FIGURE);
 
 					// создаЄм фигуру и выводим еЄ название
 					FigureName = getStringLikeThis(getStringLikeThis(Propn, ANY_FIGURE, j), SOME_FIGURE);
 					Figure thisFigure = new Figure(ProtoFigures[getFigureID(FigureName)]);
-					ta.append("ќбнаружена фигура: "+FigureName+"\n");
 
 					// если содержатс€ пред-свойства
 					if (hasStringLikeThis(This_String, PROPERTY_FIGURE))
@@ -1451,7 +1451,6 @@ class TextToGraphic
 						String FigureName2 = getStringLikeThis(getStringLikeThis(This_String, MANYFIGURES), SOME_FIGURE);
 						if (FigureName.equals(FigureName2))
 						{
-							ta.append("ќле\n");
 							int fCount = Integer.parseInt(getStringLikeThis(getStringLikeThis(This_String, MANYFIGURES), NUMBER_ST));
 							for (int k = 0; k < fCount - 1; k++)
 							{
@@ -1606,6 +1605,7 @@ class TextToGraphic
 	private static String getStartIncStringLikeThis(String st, String mask)
 	{
 		int end = getEndPosStringLikeThis(st, mask, 0);
+		Log(st);
 		if (end != -1)
 			return st.substring(0, end);
 		else
