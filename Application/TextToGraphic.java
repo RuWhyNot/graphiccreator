@@ -522,8 +522,9 @@ class Figure extends VFigure
 // коллекция из фигур
 class FiguresCollection
 {
-		// две фигуры
-	public Figure FirstFigure, SecondFigure;
+	// две фигуры
+	public Figure FirstFigure;
+	public FiguresCollection SecondFigure;
 
 	/* тип связи
 	 *	0 - одиночная фигура
@@ -539,8 +540,15 @@ class FiguresCollection
 	// инициируем
 	FiguresCollection(Figure fig1, Figure fig2, int type)
 	{
-		FirstFigure = fig1;
-		SecondFigure = fig2;
+		FirstFigure = new Figure(fig1);
+		SecondFigure = new FiguresCollection(fig2);
+		ConnectionType = type;
+	}
+	
+	FiguresCollection(Figure fig1, FiguresCollection fig2, int type)
+	{
+		FirstFigure = new Figure(fig1);
+		SecondFigure = new FiguresCollection(fig2);
 		ConnectionType = type;
 	}
 
@@ -548,7 +556,8 @@ class FiguresCollection
 	FiguresCollection(FiguresCollection FC)
 	{
 		FirstFigure = new Figure(FC.FirstFigure);
-		SecondFigure = new Figure(FC.SecondFigure);
+		if (FC.SecondFigure != null)
+			SecondFigure = new FiguresCollection(FC.SecondFigure);
 		ConnectionType = FC.ConnectionType;
 	}
 
@@ -560,9 +569,22 @@ class FiguresCollection
 	}
 
 	// добавляем вторую фигуру
-	public void addSecondFigure(Figure fig)
+	public void addSecondFigure(Figure fig, int type)
 	{
-		SecondFigure = new Figure(fig);
+		if (SecondFigure == null)
+		{
+			SecondFigure = new FiguresCollection(FirstFigure);
+			FirstFigure = new Figure(fig);
+			ConnectionType = type;
+		}
+		else
+		{
+			SecondFigure.SecondFigure = new FiguresCollection(SecondFigure);
+			SecondFigure.FirstFigure = new Figure(FirstFigure);
+			SecondFigure.ConnectionType = ConnectionType;
+			FirstFigure = new Figure(fig);
+			ConnectionType = type;
+		}
 	}
 
 	public void setType(int type)
@@ -572,13 +594,13 @@ class FiguresCollection
 
 	public void draw(Graphics g, int xPos, int yPos, int Wid)
 	{
-		// масштабируем 0 - маленький, 1 - нормальный, 2 большой
+		// масштабируем 0 - маленький, 1 - нормальный, 2 - большой
 		int FstWid = (int)Math.round(Wid * (FirstFigure.size() + 1) / 3.0);
 		int SndWid = 0;
 		int conType = 0;
 		if (SecondFigure != null)
 		{
-			SndWid = (int)Math.round(Wid * (SecondFigure.size() + 1) / 3.0);
+			SndWid = (int)Math.round(Wid * SecondFigure.FirstFigure.size());
 			conType = ConnectionType;
 		}
 
@@ -588,28 +610,28 @@ class FiguresCollection
 				FirstFigure.draw(g, xPos, yPos, FstWid);
 				break;
 			case 1:
-				FirstFigure.draw(g, xPos, yPos, FstWid/3);
-				SecondFigure.draw(g, xPos, yPos, SndWid);
+				FirstFigure.draw(g, xPos, yPos, FstWid);
+				SecondFigure.draw(g, xPos, yPos, SndWid/3);
 				break;
 			case 2:
 				FirstFigure.draw(g, xPos-FstWid / 10, yPos-FstWid / 12, FstWid);
 				SecondFigure.draw(g, xPos+FstWid / 10, yPos+FstWid / 12, SndWid);
 				break;
 			case 3:
-				FirstFigure.draw(g, xPos, yPos - FstWid/4, FstWid/3 + FstWid/7);
-				SecondFigure.draw(g, xPos, yPos + FstWid/4, SndWid/3 + SndWid/7);
-				break;
-			case 4:
 				FirstFigure.draw(g, xPos, yPos + FstWid/4, FstWid/3 + FstWid/7);
 				SecondFigure.draw(g, xPos, yPos - FstWid/4, SndWid/3 + SndWid/7);
 				break;
-			case 5:
-				FirstFigure.draw(g, xPos - FstWid/4, yPos, FstWid/3 + FstWid/7);
-				SecondFigure.draw(g, xPos + FstWid/4, yPos, SndWid/3 + SndWid/7);
+			case 4:
+				FirstFigure.draw(g, xPos, yPos - FstWid/4, FstWid/3 + FstWid/7);
+				SecondFigure.draw(g, xPos, yPos + FstWid/4, SndWid/3 + SndWid/7);
 				break;
-			case 6:
+			case 5:
 				FirstFigure.draw(g, xPos + FstWid/4, yPos, FstWid/3 + FstWid/7);
 				SecondFigure.draw(g, xPos - FstWid/4, yPos, SndWid/3 + SndWid/7);
+				break;
+			case 6:
+				FirstFigure.draw(g, xPos - FstWid/4, yPos, FstWid/3 + FstWid/7);
+				SecondFigure.draw(g, xPos + FstWid/4, yPos, SndWid/3 + SndWid/7);
 				break;
 			default:
 				FirstFigure.draw(g, xPos, yPos, FstWid);
@@ -661,6 +683,18 @@ class FiguresMass
 	{
 		Mass[Count] = new FiguresCollection(fig);
 		Count++;
+	}
+
+	// меняем фигуру
+	public void setFigure(int fnum, FiguresCollection FC)
+	{
+		Mass[fnum] = new FiguresCollection(FC);
+	}
+
+	// меняем фигуру
+	public void insertFigure(int fnum, Figure fig)
+	{
+		Mass[fnum] = new FiguresCollection(fig);
 	}
 
 	// отрисовываем массив объектов
@@ -1355,6 +1389,8 @@ class TextToGraphic
 				String PropertyName;
 				// вспомогательная строка
 				String nextCroppedString;
+				// отношение между предыдущей и данной фигурами
+				int relation = 0;
 				// первая ли это фигура в коллекции
 				boolean isFirstFigure = true;
 
@@ -1424,32 +1460,31 @@ class TextToGraphic
 						}
 					}
 
-					// если это вторая фигура в коллекции
+					// если это не первая фигура в коллекции
 					if (!isFirstFigure)
 					{
 						// добавляем информацию о фигуре в последнюю обработанную коллекцию
-						fr.getFigure(fr.count() - 1).addSecondFigure(thisFigure);
-						isFirstFigure = true;
+						fr.getFigure(fr.count() - 1).addSecondFigure(thisFigure, relation);
 					}
-					else if (hasStringLikeThis(nextCroppedString, ANY_RELATION))
-					{	// если содержится информация об отношении этой фигуры с другой фигурой
-
-						// вносим первую фигуру в коллекцию
+					else // если это первая фигура
+					{
+						// добавляем фигуру в список на отрисовку
 						fr.insertFigure(thisFigure);
+					}
+
+					if (hasStringLikeThis(nextCroppedString, ANY_RELATION))
+					{	// если содержится информация об отношении этой фигуры с другой фигурой
 						// получаем тип отношения
-						int relation = getRelationByName(getStringLikeThis(getStringLikeThis(Next_String, ANY_RELATION), SOME_RELATION));
-						// устонавливаем тип отношения
-						fr.getFigure(fr.count() - 1).setType(relation);
+						relation = getRelationByName(getStringLikeThis(getStringLikeThis(Next_String, ANY_RELATION), SOME_RELATION));
 
 						// урезаем строку, чтобы не обработать свойство второй раз
 						Next_String = getEndStringLikeThis(Next_String, SOME_RELATION);
 
 						isFirstFigure = false;
 					}
-					else // если это простая одиночная фигура
+					else
 					{
-						// добавляем фигуру в список на отрисовку
-						fr.insertFigure(thisFigure);
+						isFirstFigure = true;
 					}
 				}
 			}
