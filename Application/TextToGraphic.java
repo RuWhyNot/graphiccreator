@@ -1401,7 +1401,7 @@ class TextToGraphic
 					ta.append("\""+This_String+"\"\n");
 					Next_String = getEndStringLikeThis(Next_String, ANY_FIGURE);
 
-					// создаём фигуру и выводим её название
+					// создаём фигуру и запоминаем её название
 					FigureName = getStringLikeThis(getStringLikeThis(Propn, ANY_FIGURE, j), SOME_FIGURE);
 					Figure thisFigure = new Figure(ProtoFigures[getFigureID(FigureName)]);
 
